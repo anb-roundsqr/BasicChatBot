@@ -2,9 +2,29 @@ from rest_framework import views, response, exceptions, renderers
 from datetime import datetime
 from django.utils import timezone
 from ChatBot.functions import process_api_exception, exception_handler
-from ChatBot.models import BotQuestions
+from ChatBot.models import BotQuestions, Bots, Customers
 from ChatBot.serializers import ClientQuestionSerializer
 import json
+
+
+class Customer(views.APIView):
+
+    def post(self, request):
+
+        Customers(name="Apollo").save()
+        return response.Response({
+            "status": "success"
+        })
+
+
+class Bot(views.APIView):
+
+    def post(self, request):
+        customer = Customers.objects.get(name="Apollo")
+        Bots(customer=customer).save()
+        return response.Response({
+            "status": "success"
+        })
 
 
 class ClientConfiguration(views.APIView):
@@ -17,14 +37,14 @@ class ClientConfiguration(views.APIView):
         :return:
         """
         result = {
-            "message": "customer must be non empty",
+            "message": "bot must be non empty",
             "response": "",
             "status": "failed"
         }
         try:
-            if request.query_params["customer"] != "":
+            if request.query_params["bot"] != "":
                 result.update(
-                    self.retrieve_sections(request.query_params["customer"])
+                    self.retrieve_sections(request.query_params["bot"])
                 )
         except KeyError as e:
             result.update({
@@ -42,18 +62,20 @@ class ClientConfiguration(views.APIView):
         :return:
         """
         result = {
-            "message": "questions must be non empty",
+            "message": "bot must be non empty",
             "response": "",
             "status": "failed"
         }
         try:
-            result["message"], questions = self.validate_questions(
-                request.data["questions"]
-            )
-            if result["message"] == "":
-                result = self.create_or_update_sections(
-                    questions,
+            if request.data["bot"] != "":
+                result["message"], questions = self.validate_questions(
+                    request.data["questions"]
                 )
+                if result["message"] == "":
+                    result = self.create_or_update_sections(
+                        request.data["bot"],
+                        questions,
+                    )
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -62,10 +84,11 @@ class ClientConfiguration(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def create_or_update_sections(self, questions):
+    def create_or_update_sections(self, bot, questions):
 
         """
         :param questions:
+        :param bot
         :return result:
         Here the process like, if the sections and it's questions have ids in
          the form of section_id, question_id respectively we need to update
@@ -76,44 +99,55 @@ class ClientConfiguration(views.APIView):
             "message": ""
         }
         try:
-            for question in questions:
-                question_obj = BotQuestions()
-                question_obj.question = question["question"]
-                if "description" in question:
-                    question_obj.description = question["description"]
-                question_obj.question_id = question["question_id"]
-                question_obj.answer_type = question[
-                    "answer_type"
-                ].upper()
-                if question['answer_type'].lower() in [
-                    'select',
-                    'checkbox',
-                    'radio'
-                ]:
-                    question_obj.suggested_answers = question[
-                        "suggested_answers"
-                    ]
-                if "suggested_jump" in question:
-                    question_obj.suggested_jump = question[
-                        "suggested_jump"
-                    ]
-                if question["answer_type"].lower() in [
-                    'text',
-                    'number'
-                ]:
-                    question_obj.validation1 = question["validation1"]
-                    question_obj.validation2 = question["validation2"]
-                    question_obj.error_msg = question["error_msg"]
-                question_obj.required = question["required"]
-                # question_obj.created_by_id = auth_result["user"].id
-                question_obj.date_created = datetime.now(
-                    tz=timezone.utc
+            bot_info = Bots.objects.filter(id=bot)
+            result["message"] = "invalid bot"
+            if bot_info:
+                sections_info = BotQuestions.objects.filter(
+                    bot=bot_info[0]
                 )
-                question_obj.save()
-            result.update({
-                "message": "client configuration done",
-                "status": "success"
-            })
+                if sections_info:
+                    BotQuestions.objects.filter(
+                        bot=bot_info[0]
+                    ).delete()
+                for question in questions:
+                    question_obj = BotQuestions()
+                    question_obj.bot = bot_info[0]
+                    question_obj.question = question["question"]
+                    if "description" in question:
+                        question_obj.description = question["description"]
+                    question_obj.question_id = question["question_id"]
+                    question_obj.answer_type = question[
+                        "answer_type"
+                    ].upper()
+                    if question['answer_type'].lower() in [
+                        'select',
+                        'checkbox',
+                        'radio'
+                    ]:
+                        question_obj.suggested_answers = question[
+                            "suggested_answers"
+                        ]
+                    if "suggested_jump" in question:
+                        question_obj.suggested_jump = question[
+                            "suggested_jump"
+                        ]
+                    if question["answer_type"].lower() in [
+                        'text',
+                        'number'
+                    ]:
+                        question_obj.validation1 = question["validation1"]
+                        question_obj.validation2 = question["validation2"]
+                        question_obj.error_msg = question["error_msg"]
+                    question_obj.required = question["required"]
+                    # question_obj.created_by_id = auth_result["user"].id
+                    question_obj.date_created = datetime.now(
+                        tz=timezone.utc
+                    )
+                    question_obj.save()
+                result.update({
+                    "message": "bot configuration done",
+                    "status": "success"
+                })
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
         except Exception as e:
@@ -121,7 +155,7 @@ class ClientConfiguration(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def retrieve_sections(self, customer):
+    def retrieve_sections(self, bot):
 
         result = {
             "status": "failed",
@@ -131,7 +165,9 @@ class ClientConfiguration(views.APIView):
             questions_info = json.loads(
                 renderers.JSONRenderer().render(
                     ClientQuestionSerializer(
-                        BotQuestions.objects.all(), many=True
+                        BotQuestions.objects.filter(
+                            bot_id=bot
+                        ), many=True
                     ).data
                 )
             )

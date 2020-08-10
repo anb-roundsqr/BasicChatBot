@@ -15,9 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
-from ChatBot.views import ClientConfiguration
+from ChatBot.views import ClientConfiguration, Customer, Bot
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    re_path(r'customer', Customer.as_view()),
+    re_path(r'bot', Bot.as_view()),
     re_path(r'client-config', ClientConfiguration.as_view()),
 ]
