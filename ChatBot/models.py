@@ -3,11 +3,54 @@ from model_utils import Choices
 from django.utils.translation import ugettext_lazy as _
 
 
-class ClientQuestions(models.Model):
+class Customers(models.Model):
+
+    objects = models.Manager
+
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        app_label = 'ChatBot'
+
+
+class Bots(models.Model):
+
+    objects = models.Manager
+
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
+
+    class Meta:
+        app_label = 'ChatBot'
+
+
+class Conversation(models.Model):
+
+    objects = models.Manager
+
+    # ConversationRecordID
+    bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
+    bot_origin_url = models.TextField()
+    ip_address = models.TextField(null=True)
+    session_id = models.TextField()
+    event_name = models.TextField()
+    time_stamp = models.DateTimeField()
+    text = models.TextField()
+    chat_source_latitude = models.TextField()
+    chat_source_longitude = models.TextField()
+    browser = models.TextField()
+    update_date_time = models.DateTimeField()
+
+    class Meta:
+        app_label = 'ChatBot'
+
+
+class BotQuestions(models.Model):
 
     objects = models.Manager
 
     id = models.AutoField(primary_key=True)
+    bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
     question = models.TextField(max_length=250)
     description = models.TextField(max_length=500, null=True)
     question_id = models.IntegerField()

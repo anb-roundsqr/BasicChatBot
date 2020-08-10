@@ -2,7 +2,7 @@ from rest_framework import views, response, exceptions, renderers
 from datetime import datetime
 from django.utils import timezone
 from ChatBot.functions import process_api_exception, exception_handler
-from ChatBot.models import ClientQuestions
+from ChatBot.models import BotQuestions
 from ChatBot.serializers import ClientQuestionSerializer
 import json
 
@@ -77,7 +77,7 @@ class ClientConfiguration(views.APIView):
         }
         try:
             for question in questions:
-                question_obj = ClientQuestions()
+                question_obj = BotQuestions()
                 question_obj.question = question["question"]
                 if "description" in question:
                     question_obj.description = question["description"]
@@ -131,7 +131,7 @@ class ClientConfiguration(views.APIView):
             questions_info = json.loads(
                 renderers.JSONRenderer().render(
                     ClientQuestionSerializer(
-                        ClientQuestions.objects.all(), many=True
+                        BotQuestions.objects.all(), many=True
                     ).data
                 )
             )

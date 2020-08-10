@@ -25,7 +25,7 @@ SECRET_KEY = '$*v++%tgzssnj9_c#dcr_pla&x^v&u64gdili1iqqnx&7_l8y^'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -76,9 +76,12 @@ WSGI_APPLICATION = 'ChatBot.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+        'ENGINE': 'djongo',
+        'NAME': 'ChatBot',
+        'HOST': 'localhost',
+        'PORT': 27017,
+        'ENFORCE_SCHEMA': False,
+    },
 }
 
 
