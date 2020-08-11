@@ -2,7 +2,7 @@ from rest_framework import views, response, exceptions, renderers
 from datetime import datetime
 from django.utils import timezone
 from ChatBot.functions import process_api_exception, exception_handler
-from ChatBot.models import BotQuestions, Bots, Customers
+from ChatBot.models import BotQuestions, Bots, Customers, Conversation
 from ChatBot.serializers import ClientQuestionSerializer
 import json
 
@@ -311,3 +311,60 @@ class ClientConfiguration(views.APIView):
                                 break
 
         return message, questions
+
+
+class ClientForm(views.APIView):
+
+    def post(self, request):
+
+        result = {
+            "message": "Invalid bot",
+            "status": "failed",
+            "response": ""
+        }
+        try:
+            result = ClientConfiguration().retrieve_sections(request.POST["bot_id"])
+            if result["status"] == "success":
+                bot = Bots.objects.get(id=request.POST["bot_id"])
+                questions = result["response"]
+                questions = sorted(questions, key=lambda x: x['question_id'])
+                next_question = questions[0]
+                if 'question' in request.POST:
+                    submitted_question = [question for question in questions if question[
+                        'question'
+                    ] == request.POST['question']][0]
+                    next_question = [question for question in questions if question[
+                        'question_id'
+                    ] == int(submitted_question['question_id']) + 1][0]
+                    if 'related' in submitted_question:
+                        if submitted_question['related'] == 'yes':
+                            if len(submitted_question['suggested_answers']) > 0:
+                                if request.POST['text'] in submitted_question['suggested_answers']:
+                                    next_index = submitted_question['suggested_answers'].index(request.POST['text'])
+                                    next_question_id = submitted_question['suggested_jump'][next_index]
+                                    next_question = [question for question in questions if question[
+                                        'question_id'
+                                    ] == int(next_question_id)][0]
+                                else:
+                                    result["message"] = "invalid answer"
+                                    return response.Response(result)
+                    print('bot', bot)
+                    con_obj = Conversation()
+                    con_obj.bot = bot
+                    con_obj.customer = bot.customer
+                    con_obj.text = request.POST["text"]
+                    con_obj.update_date_time = datetime.now(tz=timezone.utc)
+                    con_obj.save()
+                print('questions', questions)
+                result = {
+                    "message": "question info",
+                    "status": "success",
+                    "response": next_question
+                }
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        print("result", result)
+        return response.Response(result)

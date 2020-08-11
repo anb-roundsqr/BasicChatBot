@@ -34,11 +34,11 @@ class Conversation(models.Model):
     ip_address = models.TextField(null=True)
     session_id = models.TextField()
     event_name = models.TextField()
-    time_stamp = models.DateTimeField()
+    time_stamp = models.DateTimeField(auto_now_add=True)
     text = models.TextField()
-    chat_source_latitude = models.TextField()
-    chat_source_longitude = models.TextField()
-    browser = models.TextField()
+    chat_source_latitude = models.TextField(null=True)
+    chat_source_longitude = models.TextField(null=True)
+    browser = models.TextField(null=True)
     update_date_time = models.DateTimeField()
 
     class Meta:
