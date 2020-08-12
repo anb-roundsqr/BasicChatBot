@@ -372,9 +372,10 @@ class ClientForm(views.APIView):
             if result["status"] == "success":
                 questions = result["response"]
                 result["response"] = ""
+                result["status"] = "failed"
                 questions = sorted(questions, key=lambda x: x['question_id'])
                 next_question = questions[0]
-                if 'question' in bot_info:
+                if bot_info['question'].lower() != "welcome":
                     submitted_question = [question for question in questions if question[
                         'question'
                     ] == bot_info['question']]
