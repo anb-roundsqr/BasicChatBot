@@ -299,6 +299,24 @@ class ClientConfiguration(views.APIView):
                         else:
                             question["required"] = question[
                                 "required"].lower()
+                        if "related" not in question:
+                            message = "related missing in 'question'" \
+                                      " at index " + str(j + 1)
+                            break
+                        elif question["related"].lower() not in [
+                            'true',
+                            'false'
+                        ]:
+                            message = "related must be either 'true'" \
+                                      " or 'false' in 'question'" \
+                                      " at index " + str(j + 1)
+                            break
+                        else:
+                            question["related"] = question["related"].lower()
+                            if question["related"] == 'true':
+                                question["related"] = True
+                            else:
+                                question["related"] = False
                         if question['answer_type'].lower() in [
                             'select',
                             'checkbox',
@@ -318,14 +336,17 @@ class ClientForm(views.APIView):
     def post(self, request):
 
         result = {
-            "message": "Invalid bot_info",
+            "message": "non empty raw data required",
             "status": "failed",
             "response": ""
         }
         try:
-            result["message"], bot_info = self.validate_bot_info(request.POST["bot_info"])
-            if not result["message"]:
-                result.update(self.bot_conversation(bot_info))
+            body_raw_input = request.body.decode()
+            print('body_raw_input', body_raw_input)
+            if body_raw_input:
+                result["message"], bot_info = self.validate_bot_info(body_raw_input)
+                if not result["message"]:
+                    result.update(self.bot_conversation(bot_info))
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -365,7 +386,7 @@ class ClientForm(views.APIView):
                         return result
                     next_question = next_question[0]
                     if 'related' in submitted_question:
-                        if submitted_question['related'] == 'yes':
+                        if submitted_question['related']:
                             if len(submitted_question['suggested_answers']) > 0:
                                 if bot_info['text'] in submitted_question['suggested_answers']:
                                     next_index = submitted_question['suggested_answers'].index(bot_info['text'])
@@ -381,16 +402,19 @@ class ClientForm(views.APIView):
                     con_obj.bot = bot
                     con_obj.customer = bot.customer
                     con_obj.text = bot_info["text"]
+                    con_obj.ip_address = bot_info["ip"]
+                    con_obj.session_id = bot_info["sessionId"]
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
                 print('questions', questions)
+                suggested_answers = [{sug_ans: sug_ans} for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
                     'bot': next_question['bot'],
                     'question': next_question['question'],
                     'question_id': next_question['question_id'],
                     'answer_type': next_question['answer_type'],
-                    'suggested_answers': next_question['suggested_answers'],
+                    'suggested_answers': suggested_answers,
                 }
                 result = {
                     "message": "next question info",
@@ -424,4 +448,8 @@ class ClientForm(views.APIView):
                 if "question" in bot_obj:
                     if 'text' not in bot_obj:
                         message = "text missing in 'bot_info'"
+                if "ip" not in bot_obj:
+                    message = "ip missing in 'bot_info'"
+                if "sessionId" not in bot_obj:
+                    message = "sessionId missing in 'bot_info'"
         return message, bot_obj

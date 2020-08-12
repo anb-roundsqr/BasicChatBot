@@ -75,6 +75,7 @@ class BotQuestions(models.Model):
     date_modified = models.DateTimeField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     required = models.CharField(max_length=4, default="no")
+    related = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'ChatBot'
