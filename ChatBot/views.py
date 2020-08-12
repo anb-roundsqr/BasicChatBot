@@ -346,7 +346,11 @@ class ClientForm(views.APIView):
             if body_raw_input:
                 result["message"], bot_info = self.validate_bot_info(body_raw_input)
                 if not result["message"]:
-                    result.update(self.bot_conversation(bot_info))
+                    func_res = self.bot_conversation(bot_info)
+                    if isinstance(func_res, dict):
+                        result.update(func_res)
+                    if isinstance(func_res, list):
+                        result = func_res
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -407,7 +411,7 @@ class ClientForm(views.APIView):
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
                 print('questions', questions)
-                suggested_answers = [{sug_ans: sug_ans} for sug_ans in next_question["suggested_answers"]]
+                suggested_answers = [{"payload": sug_ans, "title": sug_ans} for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
                     'bot': next_question['bot'],
@@ -421,6 +425,7 @@ class ClientForm(views.APIView):
                     "status": "success",
                     "response": required_next_question
                 }
+                result = [required_next_question]
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
         except Exception as e:
