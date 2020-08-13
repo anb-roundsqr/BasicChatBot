@@ -397,8 +397,8 @@ class ClientForm(views.APIView):
                                     next_index = submitted_question['suggested_answers'].index(bot_info['text'])
                                     next_question_id = submitted_question['suggested_jump'][next_index]
                                     next_question = [question for question in questions if question[
-                                        'question_id'
-                                    ] == int(next_question_id)][0]
+                                        'question'
+                                    ] == next_question_id][0]
                                 else:
                                     result["message"] = "invalid answer"
                                     return result
