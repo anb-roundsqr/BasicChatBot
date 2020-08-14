@@ -33,7 +33,7 @@ class Conversation(models.Model):
     bot_origin_url = models.TextField()
     ip_address = models.TextField(null=True)
     session_id = models.TextField()
-    event_name = models.TextField()
+    event_name = models.TextField()  # bot or user response
     time_stamp = models.DateTimeField(auto_now_add=True)
     text = models.TextField()
     chat_source_latitude = models.TextField(null=True)
@@ -45,7 +45,7 @@ class Conversation(models.Model):
         app_label = 'ChatBot'
 
 
-class BotQuestions(models.Model):
+class BotQuestions(models.Model):  # BotConfiguration
 
     objects = models.Manager
 

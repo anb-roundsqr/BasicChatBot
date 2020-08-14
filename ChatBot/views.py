@@ -367,7 +367,7 @@ class ClientForm(views.APIView):
             "response": ""
         }
         try:
-            bot = Bots.objects.get(id=bot_info["bot_id"])
+            bot = Bots.objects.get(id=bot_info["bot_id"])  # bot_id will changed to source_url
             result = ClientConfiguration().retrieve_sections(bot_info["bot_id"])
             if result["status"] == "success":
                 questions = result["response"]
