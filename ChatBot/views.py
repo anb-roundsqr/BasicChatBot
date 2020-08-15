@@ -139,6 +139,7 @@ class ClientConfiguration(views.APIView):
                         question_obj.validation2 = question["validation2"]
                         question_obj.error_msg = question["error_msg"]
                     question_obj.required = question["required"]
+                    question_obj.related = question["related"]
                     # question_obj.created_by_id = auth_result["user"].id
                     question_obj.date_created = datetime.now(
                         tz=timezone.utc
@@ -175,9 +176,12 @@ class ClientConfiguration(views.APIView):
                 question["suggested_answers"] = eval(
                     question["suggested_answers"]
                 )
-                question["suggested_jump"] = eval(
-                    question["suggested_jump"]
-                )
+                try:
+                    question["suggested_jump"] = eval(
+                        question["suggested_jump"]
+                    )
+                except:
+                    pass
             result.update({
                 "message": "client configuration",
                 "status": "success",
@@ -313,10 +317,12 @@ class ClientConfiguration(views.APIView):
                             break
                         else:
                             question["related"] = question["related"].lower()
+                            print('related', question['related'])
                             if question["related"] == 'true':
                                 question["related"] = True
                             else:
                                 question["related"] = False
+                            print('related', question['related'])
                         if question['answer_type'].lower() in [
                             'select',
                             'checkbox',
@@ -375,7 +381,9 @@ class ClientForm(views.APIView):
                 result["status"] = "failed"
                 questions = sorted(questions, key=lambda x: x['question_id'])
                 next_question = questions[0]
+                print('current question', bot_info['question'])
                 if bot_info['question'].lower() != "welcome":
+                    print("Check1")
                     submitted_question = [question for question in questions if question[
                         'question'
                     ] == bot_info['question']]
@@ -383,6 +391,7 @@ class ClientForm(views.APIView):
                         result["message"] = "invalid question"
                         return result
                     submitted_question = submitted_question[0]
+                    print('submitted_question', submitted_question)
                     next_question = [question for question in questions if question[
                         'question_id'
                     ] == int(submitted_question['question_id']) + 1]
@@ -391,14 +400,26 @@ class ClientForm(views.APIView):
                         return result
                     next_question = next_question[0]
                     if 'related' in submitted_question:
+                        print('submitted_question relation', submitted_question["related"])
                         if submitted_question['related']:
+                            print("this is related question")
                             if len(submitted_question['suggested_answers']) > 0:
+                                print("current answer", bot_info["text"])
                                 if bot_info['text'] in submitted_question['suggested_answers']:
                                     next_index = submitted_question['suggested_answers'].index(bot_info['text'])
-                                    next_question_id = submitted_question['suggested_jump'][next_index]
-                                    next_question = [question for question in questions if question[
-                                        'question'
-                                    ] == next_question_id][0]
+                                    print('next_index', next_index)
+                                    if next_index < len(submitted_question['suggested_jump']):
+                                        next_question_id = submitted_question['suggested_jump'][next_index]
+                                        print('next_question_id', next_question_id)
+                                        next_question = [question for question in questions if question[
+                                            'question'
+                                        ] == next_question_id][0]
+                                    elif len(submitted_question['suggested_jump']) == 1:
+                                        next_question_id = submitted_question['suggested_jump'][0]
+                                        print('next_question_id', next_question_id)
+                                        next_question = [question for question in questions if question[
+                                            'question'
+                                        ] == next_question_id][0]
                                 else:
                                     result["message"] = "invalid answer"
                                     return result
@@ -411,7 +432,7 @@ class ClientForm(views.APIView):
                     con_obj.session_id = bot_info["sessionId"]
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
-                print('questions', questions)
+                # print('questions', questions)
                 suggested_answers = [{"payload": sug_ans, "title": sug_ans} for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
