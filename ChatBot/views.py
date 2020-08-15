@@ -395,7 +395,7 @@ class ClientForm(views.APIView):
                     next_question = [question for question in questions if question[
                         'question_id'
                     ] == int(submitted_question['question_id']) + 1]
-                    if not next_question:
+                    if not next_question or 'thanks' in submitted_question['question'].lower():
                         result["message"] = "no more questions"
                         return result
                     next_question = next_question[0]
@@ -441,7 +441,10 @@ class ClientForm(views.APIView):
                     'question_id': next_question['question_id'],
                     'answer_type': next_question['answer_type'],
                     'suggested_answers': suggested_answers,
+                    'is_last_question': False
                 }
+                if 'thanks' in next_question['question'].lower():
+                    required_next_question['is_last_question'] = True
                 result = {
                     "message": "next question info",
                     "status": "success",
