@@ -7,7 +7,9 @@ class Customers(models.Model):
 
     objects = models.Manager
 
+    CustomerID = models.TextField(null=True)
     name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, null=True)
 
     class Meta:
         app_label = 'ChatBot'
@@ -17,7 +19,12 @@ class Bots(models.Model):
 
     objects = models.Manager
 
+    BotID = models.TextField(null=True)
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
+    bot_type = models.TextField(null=True)
+    domain = models.TextField(null=True)
+    source_url = models.TextField(null=True)
+    model_name = models.CharField(max_length=125, null=True)
 
     class Meta:
         app_label = 'ChatBot'

@@ -11,20 +11,46 @@ class Customer(views.APIView):
 
     def post(self, request):
 
-        Customers(name="Apollo").save()
-        return response.Response({
-            "status": "success"
-        })
+        result = {
+            "message": "non empty raw data required",
+            "status": "failed",
+            "response": ""
+        }
+        try:
+            Customers(name=request.POST["name"]).save()
+            return response.Response({
+                "status": "success"
+            })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        print("result", result)
+        return response.Response(result)
 
 
 class Bot(views.APIView):
 
     def post(self, request):
-        customer = Customers.objects.get(name="Apollo")
-        Bots(customer=customer).save()
-        return response.Response({
-            "status": "success"
-        })
+        result = {
+            "message": "non empty raw data required",
+            "status": "failed",
+            "response": ""
+        }
+        try:
+            customer = Customers.objects.get(name="Apollo")
+            Bots(customer=customer).save()
+            return response.Response({
+                "status": "success"
+            })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        print("result", result)
+        return response.Response(result)
 
 
 class ClientConfiguration(views.APIView):
@@ -408,14 +434,21 @@ class ClientForm(views.APIView):
                                 if bot_info['text'] in submitted_question['suggested_answers']:
                                     next_index = submitted_question['suggested_answers'].index(bot_info['text'])
                                     print('next_index', next_index)
-                                    if next_index < len(submitted_question['suggested_jump']):
-                                        next_question_id = submitted_question['suggested_jump'][next_index]
-                                        print('next_question_id', next_question_id)
-                                        next_question = [question for question in questions if question[
-                                            'question'
-                                        ] == next_question_id][0]
-                                    elif len(submitted_question['suggested_jump']) == 1:
-                                        next_question_id = submitted_question['suggested_jump'][0]
+                                    if isinstance(submitted_question["suggested_jump"], list):
+                                        if next_index < len(submitted_question['suggested_jump']):
+                                            next_question_id = submitted_question['suggested_jump'][next_index]
+                                            print('next_question_id', next_question_id)
+                                            next_question = [question for question in questions if question[
+                                                'question'
+                                            ] == next_question_id][0]
+                                        elif len(submitted_question['suggested_jump']) == 1:
+                                            next_question_id = submitted_question['suggested_jump'][0]
+                                            print('next_question_id', next_question_id)
+                                            next_question = [question for question in questions if question[
+                                                'question'
+                                            ] == next_question_id][0]
+                                    else:
+                                        next_question_id = submitted_question['suggested_jump']
                                         print('next_question_id', next_question_id)
                                         next_question = [question for question in questions if question[
                                             'question'
