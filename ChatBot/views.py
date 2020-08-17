@@ -456,6 +456,12 @@ class ClientForm(views.APIView):
                                 else:
                                     result["message"] = "invalid answer"
                                     return result
+                            else:
+                                next_question_id = submitted_question['suggested_jump']
+                                print('next_question_id', next_question_id)
+                                next_question = [question for question in questions if question[
+                                    'question'
+                                ] == next_question_id][0]
                     print('bot', bot)
                     con_obj = Conversation()
                     con_obj.bot = bot
