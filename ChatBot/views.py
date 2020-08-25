@@ -1,10 +1,19 @@
 from rest_framework import views, response, exceptions, renderers
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
-from ChatBot.functions import process_api_exception, exception_handler
+from ChatBot.functions import (
+    process_api_exception,
+    exception_handler,
+    time_stamp_to_date_format
+)
 from ChatBot.models import BotQuestions, Bots, Customers, Conversation
 from ChatBot.serializers import ClientQuestionSerializer
 import json
+from geoip import geolite2
+from itertools import groupby
+from django.core.serializers.json import DjangoJSONEncoder
+from bson.json_util import dumps
+from  django.db.models.expressions import RawSQL
 
 
 class Customer(views.APIView):
@@ -407,6 +416,9 @@ class ClientForm(views.APIView):
                 result["status"] = "failed"
                 questions = sorted(questions, key=lambda x: x['question_id'])
                 next_question = questions[0]
+                print('ip', bot_info["ip"])
+                match = geolite2.lookup(bot_info["ip"])
+                print('ip match', match)
                 print('current question', bot_info['question'])
                 if bot_info['question'].lower() != "welcome":
                     print("Check1")
@@ -469,6 +481,10 @@ class ClientForm(views.APIView):
                     con_obj.text = bot_info["text"]
                     con_obj.ip_address = bot_info["ip"]
                     con_obj.session_id = bot_info["sessionId"]
+                    con_obj.sender = bot_info["sender"]
+                    if match:
+                        con_obj.latitude = match.location[0]
+                        con_obj.longitude = match.location[1]
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
                 # print('questions', questions)
@@ -489,6 +505,15 @@ class ClientForm(views.APIView):
                     "status": "success",
                     "response": required_next_question
                 }
+                con_obj = Conversation()
+                con_obj.bot = bot
+                con_obj.customer = bot.customer
+                con_obj.text = required_next_question["question"]
+                con_obj.ip_address = bot_info["ip"]
+                con_obj.session_id = bot_info["sessionId"]
+                con_obj.sender = 'bot'
+                con_obj.update_date_time = datetime.now(tz=timezone.utc)
+                con_obj.save()
                 result = [required_next_question]
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
@@ -521,4 +546,179 @@ class ClientForm(views.APIView):
                     message = "ip missing in 'bot_info'"
                 if "sessionId" not in bot_obj:
                     message = "sessionId missing in 'bot_info'"
+                if "sender" not in bot_obj:
+                    message = "sender missing in 'bot_info'"
         return message, bot_obj
+
+
+class SessionAnalytics(views.APIView):
+
+    def get(self, request, **kwargs):
+
+        result = {
+            "message": "Value required for 'days_count' field.",
+            "status": "failed"
+        }
+        try:
+            if request.query_params["days_count"]:
+                try:
+                    days_count = int(request.query_params["days_count"])
+                    if kwargs['slug'] == "geo":
+                        result[
+                            "message"
+                        ] = "Value required for 'latitude' field."
+                        if request.query_params['latitude']:
+                            try:
+                                latitude = float(
+                                    request.query_params['latitude']
+                                )
+                                result[
+                                    "message"
+                                ] = "Value required for 'longitude' field."
+                                if request.query_params['longitude']:
+                                    try:
+                                        longitude = float(
+                                            request.query_params['longitude']
+                                        )
+                                        result[
+                                            "message"
+                                        ] = "Value required for" \
+                                            " 'radius' field."
+                                        if request.query_params['radius']:
+                                            try:
+                                                radius = float(
+                                                    request.query_params[
+                                                        'radius'
+                                                    ]
+                                                )
+                                                result.update(
+                                                    self.process_metrics(
+                                                        days_count,
+                                                        latitude,
+                                                        longitude,
+                                                        radius
+                                                    )
+                                                )
+                                            except ValueError:
+                                                result[
+                                                    "message"
+                                                ] = "'radius' must be integer."
+                                    except ValueError:
+                                        result[
+                                            "message"
+                                        ] = "'longitude' must be float."
+                            except ValueError:
+                                result[
+                                    "message"
+                                ] = "'latitude' must be float."
+                    else:
+                        result.update(
+                            self.process_metrics(
+                                int(request.query_params["days_count"])
+                            )
+                        )
+                except ValueError:
+                    result["message"] = "'days_count' must be integer."
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        print("result", result)
+        return response.Response(result)
+
+    def process_metrics(
+            self,
+            days_count,
+            latitude=None,
+            longitude=None,
+            radius=None
+    ):
+
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            current_date = datetime.now(tz=timezone.utc)
+            start_date = current_date - timedelta(days=days_count)
+            print('current_date', current_date.date())
+            print('start_date', start_date.date())
+            actual_dates = []
+            for i in range(days_count):
+                actual_dates.append(
+                    datetime.strftime(
+                        start_date + timedelta(days=i),
+                        "%Y-%m-%d"
+                    )
+                )
+            print('actual_dates', actual_dates)
+            if latitude and longitude and radius:
+                """
+                Return objects sorted by distance to specified coordinates
+                which distance is less than max_distance given in kilometers
+                """
+                # Great circle distance formula
+                gcd_formula = "6371 * acos(least(greatest(cos(radians(%s))" \
+                              " * cos(radians(latitude)) * cos(radians(" \
+                              "longitude) - radians(%s)) + sin(radians(%s))" \
+                              " * sin(radians(latitude)), -1), 1))"
+                distance_raw_sql = RawSQL(
+                    gcd_formula,
+                    (latitude, longitude, latitude)
+                )
+                sessions = Conversation.objects.filter(
+                    time_stamp__date__gte=start_date.date(),
+                    time_stamp__date__lte=current_date.date()
+                ).values('time_stamp').annotate(
+                    distance=distance_raw_sql
+                ).order_by('distance')
+                if radius is not None:
+                    sessions = sessions.filter(distance__lt=radius)
+            else:
+                sessions = Conversation.objects.filter(
+                    time_stamp__date__gte=start_date.date(),
+                    time_stamp__date__lt=current_date.date()
+                ).values('time_stamp')
+            sessions = json.loads(dumps(sessions))
+            print('sessions', sessions)
+            result["message"] = "no graph data"
+            if sessions:
+                for session in sessions:
+                    session["time_stamp"] = time_stamp_to_date_format(
+                        session["time_stamp"]["$date"]
+                    ).split()[0]
+                graph_data = unique_and_count(sessions)
+                existed_dates = [record["time_stamp"] for record in graph_data]
+                print('existed_dates', existed_dates)
+                for ac_date in actual_dates:
+                    if ac_date not in existed_dates:
+                        graph_data.append({
+                            "time_stamp": ac_date,
+                            "count": 0
+                        })
+                graph_data.sort(key=lambda x: x['time_stamp'])
+                result.update({
+                    "message": "graph data",
+                    "status": "success",
+                    "response": graph_data
+                })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            print("exception")
+            result.update(exception_handler(e))
+        return result
+
+
+def canonicalize_dict(x):
+
+    """Return a (key, value) list sorted by the hash of the key"""
+    return sorted(x.items(), key=lambda x: hash(x[0]))
+
+
+def unique_and_count(lst):
+
+    """Return a list of unique dicts with a 'count' key added"""
+    grouper = groupby(sorted(map(canonicalize_dict, lst)))
+    return [dict(k + [("count", len(list(g)))]) for k, g in grouper]
