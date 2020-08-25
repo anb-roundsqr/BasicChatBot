@@ -7,7 +7,7 @@ class Customers(models.Model):
 
     objects = models.Manager
 
-    customer_id = models.TextField(null=True)
+    CustomerID = models.TextField(null=True)
     name = models.CharField(max_length=200, null=False)
     org_name = models.CharField(max_length=100, unique=True)
     domain = models.SlugField(unique=True)
