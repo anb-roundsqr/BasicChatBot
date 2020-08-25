@@ -54,9 +54,9 @@ class Conversation(models.Model):
     event_name = models.TextField()  # bot or user response
     time_stamp = models.DateTimeField(auto_now_add=True)
     text = models.TextField()
-    sender = models.CharField(max_length=10)
-    latitude = models.FloatField(null=True)
-    longitude = models.FloatField(null=True)
+    # sender = models.CharField(max_length=10)
+    chat_source_latitude = models.FloatField(null=True)
+    chat_source_latitude = models.FloatField(null=True)
     browser = models.TextField(null=True)
     update_date_time = models.DateTimeField()
 
