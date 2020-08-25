@@ -7,14 +7,14 @@ class Customers(models.Model):
 
     objects = models.Manager
 
-    CustomerID = models.TextField(null=True)
+    customer_id = models.TextField(null=True)
     name = models.CharField(max_length=200, null=False)
     org_name = models.CharField(max_length=100, unique=True)
     domain = models.SlugField(unique=True)
-    email = models.EmailField(
-        max_length=200, null=True, blank=False, unique=True)
-    mobile = models.BigIntegerField(null=True, blank=False, unique=True)
-    date_joined = models.DateTimeField(null=True, blank=False)
+    email_id = models.EmailField(
+        max_length=200, null=False, blank=False, unique=True)
+    mobile = models.BigIntegerField(null=False, blank=False, unique=True)
+    date_joined = models.DateTimeField(null=False, blank=False)
     date_modified = models.DateTimeField(null=True, blank=True)
     created_by_id = models.IntegerField(null=True)
     updated_by_id = models.IntegerField(null=True)
@@ -54,9 +54,9 @@ class Conversation(models.Model):
     event_name = models.TextField()  # bot or user response
     time_stamp = models.DateTimeField(auto_now_add=True)
     text = models.TextField()
-    # sender = models.CharField(max_length=10)
-    chat_source_latitude = models.FloatField(null=True)
-    chat_source_longitude = models.FloatField(null=True)
+    sender = models.CharField(max_length=10)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
     browser = models.TextField(null=True)
     update_date_time = models.DateTimeField()
 
