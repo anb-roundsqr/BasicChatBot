@@ -11,7 +11,7 @@ class Customers(models.Model):
     name = models.CharField(max_length=200, null=False)
     org_name = models.CharField(max_length=100, unique=True)
     domain = models.SlugField(unique=True)
-    email_id = models.EmailField(
+    email = models.EmailField(
         max_length=200, null=False, blank=False, unique=True)
     mobile = models.BigIntegerField(null=False, blank=False, unique=True)
     date_joined = models.DateTimeField(null=False, blank=False)
