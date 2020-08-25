@@ -13,6 +13,12 @@ from django.utils import timezone
 from bson.objectid import ObjectId
 
 
+def time_stamp_to_date_format(date_from_db):
+    return datetime.fromtimestamp(
+        date_from_db / 1000,
+        tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
 def exception_handler(e):
 
     # To get exception information from sys package

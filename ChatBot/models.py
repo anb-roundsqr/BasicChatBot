@@ -7,9 +7,20 @@ class Customers(models.Model):
 
     objects = models.Manager
 
-    CustomerID = models.TextField(null=True)
-    name = models.CharField(max_length=255)
-    email = models.CharField(max_length=255, null=True)
+    customer_id = models.TextField(null=True)
+    name = models.CharField(max_length=200, null=False)
+    org_name = models.CharField(max_length=100, unique=True)
+    domain = models.SlugField(unique=True)
+    email_id = models.EmailField(
+        max_length=200, null=False, blank=False, unique=True)
+    mobile = models.BigIntegerField(null=False, blank=False, unique=True)
+    date_joined = models.DateTimeField(null=False, blank=False)
+    date_modified = models.DateTimeField(null=True, blank=True)
+    created_by_id = models.IntegerField(null=True)
+    updated_by_id = models.IntegerField(null=True)
+    is_active = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    logo_path = models.TextField(default='static/images/default/org_logo.png')
 
     class Meta:
         app_label = 'ChatBot'
@@ -43,8 +54,9 @@ class Conversation(models.Model):
     event_name = models.TextField()  # bot or user response
     time_stamp = models.DateTimeField(auto_now_add=True)
     text = models.TextField()
-    chat_source_latitude = models.TextField(null=True)
-    chat_source_longitude = models.TextField(null=True)
+    sender = models.CharField(max_length=10)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
     browser = models.TextField(null=True)
     update_date_time = models.DateTimeField()
 
