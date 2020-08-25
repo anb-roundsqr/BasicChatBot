@@ -83,6 +83,7 @@ DATABASES = {
         'NAME': 'chatbot',
         'HOST': 'localhost',
         'USER': 'postgres',
+        'PASSWORD': 'postgres',
         'PORT': 5432,
         'ENFORCE_SCHEMA': False,
     },
