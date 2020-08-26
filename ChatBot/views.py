@@ -481,7 +481,7 @@ class ClientForm(views.APIView):
                     con_obj.text = bot_info["text"]
                     con_obj.ip_address = bot_info["ip"]
                     con_obj.session_id = bot_info["sessionId"]
-                    con_obj.sender = bot_info["sender"]
+                    con_obj.sender = 'me'
                     if match:
                         con_obj.latitude = match.location[0]
                         con_obj.longitude = match.location[1]
@@ -546,8 +546,6 @@ class ClientForm(views.APIView):
                     message = "ip missing in 'bot_info'"
                 if "sessionId" not in bot_obj:
                     message = "sessionId missing in 'bot_info'"
-                if "sender" not in bot_obj:
-                    message = "sender missing in 'bot_info'"
         return message, bot_obj
 
 
