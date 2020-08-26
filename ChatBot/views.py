@@ -481,14 +481,17 @@ class ClientForm(views.APIView):
                     con_obj.text = bot_info["text"]
                     con_obj.ip_address = bot_info["ip"]
                     con_obj.session_id = bot_info["sessionId"]
-                    con_obj.sender = 'me'
+                    con_obj.sender = "me"
                     if match:
                         con_obj.latitude = match.location[0]
                         con_obj.longitude = match.location[1]
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
                 # print('questions', questions)
-                suggested_answers = [{"payload": sug_ans, "title": sug_ans} for sug_ans in next_question["suggested_answers"]]
+                suggested_answers = [{
+                    "payload": sug_ans,
+                    "title": sug_ans
+                } for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
                     'bot': next_question['bot'],
