@@ -1,4 +1,4 @@
-from rest_framework import views, response, exceptions, renderers
+from rest_framework import views, response, exceptions, renderers, viewsets
 from datetime import datetime, timedelta
 from django.utils import timezone
 from ChatBot.functions import (
@@ -6,60 +6,584 @@ from ChatBot.functions import (
     exception_handler,
     time_stamp_to_date_format
 )
-from ChatBot.models import BotQuestions, Bots, Customers, Conversation
-from ChatBot.serializers import ClientQuestionSerializer
+from ChatBot.models import (
+    BotConfiguration,
+    Bots,
+    Customers,
+    CustomerBots,
+    Conversation
+)
+from ChatBot.serializers import (
+    ClientQuestionSerializer,
+    CustomerSerializer,
+    CustomerListSerializer,
+    CustomerCreateSerializer,
+    CustomerUpdateSerializer,
+    CustomerRetrieveSerializer,
+    CustomerDeleteSerializer,
+    BotSerializer,
+    BotListSerializer,
+    BotCreateSerializer,
+    BotRetrieveSerializer,
+    BotUpdateSerializer,
+    CustomerBotSerializer,
+    CustomerBotListSerializer,
+    CustomerBotCreateSerializer,
+    CustomerBotRetrieveSerializer,
+    CustomerBotUpdateSerializer,
+)
 import json
 from geoip import geolite2
 from itertools import groupby
 from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
-from  django.db.models.expressions import RawSQL
+from django.db.models.expressions import RawSQL
+from django.http.request import QueryDict
+from django.shortcuts import get_object_or_404
+import re
 
 
-class Customer(views.APIView):
+class CustomerViewSet(viewsets.ViewSet):
 
-    def post(self, request):
+    serializer_class = CustomerSerializer
 
+    def list(self, request):
+        queryset = Customers.objects.all().filter(
+            is_deleted=False).order_by('-date_joined')
+        serializer_context = {
+            'request': request,
+        }
+        serializer = CustomerListSerializer(
+            queryset,
+            many=True,
+            context=serializer_context)
+        return response.Response(serializer.data)
+
+    def create(self, request):
+
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
         result = {
-            "message": "non empty raw data required",
-            "status": "failed",
-            "response": ""
+            "message": "",
+            "status": "failed"
         }
         try:
-            Customers(name=request.POST["name"]).save()
-            return response.Response({
-                "status": "success"
+            if isinstance(request.data, QueryDict):
+                request.data._mutable = True
+            requested_data = request.data
+            print("requested_data", requested_data)
+            requested_data = self.validate_requested_data(requested_data)
+            serializer_context = {
+                'request': request,
+            }
+            requested_data.update({
+                "created_by_id": 1,  # auth_result["user"].id,
+                "date_joined": datetime.now(tz=timezone.utc),
+            })
+            customer_serializer = CustomerCreateSerializer(
+                data=requested_data,
+                context=serializer_context)
+            customer_serializer.is_valid(raise_exception=True)
+            customer_serializer.save()
+            result.update({
+                "message": "customer created",
+                "status": "success",
+                "response": {"customer_id": customer_serializer.data["id"]}
             })
         except KeyError as e:
             result.update({
                 "message": "API Error",
                 "response": {e.args[0]: "This field is required."}
             })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
         print("result", result)
         return response.Response(result)
 
+    def retrieve(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        queryset = Customers.objects.all().filter(is_deleted=False)
+        customer = get_object_or_404(queryset, pk=pk)
+        serializer_context = {
+            'request': request,
+        }
+        serializer = CustomerRetrieveSerializer(
+            customer, context=serializer_context)
+        customer_details = json.loads(renderers.JSONRenderer().render(
+            serializer.data).decode())
 
-class Bot(views.APIView):
+        # user_info = Users.objects.filter(id=customer.user_id)
+        # if user_info:
+        #     customer_details.update({
+        #         "email_id": user_info[0].__dict__["email_id"],
+        #         "mobile": user_info[0].__dict__["mobile"]
+        #     })
 
-    def post(self, request):
+        return response.Response(customer_details)
+
+    def update(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
         result = {
-            "message": "non empty raw data required",
-            "status": "failed",
-            "response": ""
+            "message": "",
+            "status": "failed"
         }
         try:
-            customer = Customers.objects.get(name="Apollo")
-            Bots(customer=customer).save()
-            return response.Response({
-                "status": "success"
+            if isinstance(request.data, QueryDict):
+                request.data._mutable = True
+            requested_data = request.data
+            print("requested_data", requested_data)
+            requested_data = self.validate_requested_data(requested_data)
+            requested_data.update({
+                "updated_by_id": 1,  # auth_result["user"].id,
+                "date_modified": datetime.now(tz=timezone.utc),
+            })
+            queryset = Customers.objects.all().filter(is_deleted=False)
+            customer = get_object_or_404(queryset, pk=pk)
+
+            serializer_context = {
+                'request': request,
+            }
+            customer_serializer = CustomerUpdateSerializer(
+                customer,
+                data=requested_data,
+                context=serializer_context
+            )
+            customer_serializer.is_valid(raise_exception=True)
+            customer_serializer.save()
+            result.update({
+                "message": "customer updated",
+                "status": "success",
+                "response": {"customer_id": int(pk)}
             })
         except KeyError as e:
             result.update({
                 "message": "API Error",
                 "response": {e.args[0]: "This field is required."}
             })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
         print("result", result)
         return response.Response(result)
+
+    def delete(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            queryset = Customers.objects.all().filter(is_deleted=False)
+            customer = get_object_or_404(queryset, pk=pk)
+            customer.delete()
+            # serializer_context = {
+            #     'request': request,
+            # }
+            # required_info = {
+            #     "is_deleted": True,
+            #     "date_modified": datetime.now(tz=timezone.utc),
+            #     "updated_by_id": 1  # auth_result["user"].id
+            # }
+            # serializer = CustomerDeleteSerializer(
+            #     customer,
+            #     data=required_info,
+            #     context=serializer_context
+            # )
+            # serializer.is_valid(raise_exception=True)
+            # serializer.save()
+            result.update({
+                "message": "customer deleted.",
+                "status": "success"
+            })
+        except Exception as e:
+            result.update(exception_handler(e))
+        return response.Response(result)
+
+    def validate_requested_data(self, requested_data):
+
+        if not re.match(r"^[A-Z][A-Za-z\s'.-]{2,30}$", requested_data["name"]):
+            raise exceptions.ValidationError({
+                "name": ["Invalid `%s` value." % requested_data["name"]]
+            })
+        if "gender" in requested_data:
+            try:
+                requested_data["gender"] = int(requested_data["gender"])
+                if int(requested_data["gender"]) not in [1, 2]:
+                    raise exceptions.ValidationError({
+                        "gender": [
+                            "Invalid choice `%s`." % requested_data["gender"]
+                        ]
+                    })
+            except ValueError:
+                raise exceptions.ValidationError({
+                    "gender": ["Integer required not string."]
+                })
+            if requested_data["gender"] == 1:
+                requested_data["gender"] = "Female"
+            elif requested_data["gender"] == 2:
+                requested_data["gender"] = "Male"
+        if requested_data["mobile"] == "":
+            raise exceptions.ValidationError({
+                "mobile": ["Invalid `%s` value." % requested_data["mobile"]]
+            })
+        return requested_data
+
+
+class BotViewSet(viewsets.ViewSet):
+
+    serializer_class = BotSerializer
+
+    def list(self, request):
+        queryset = Bots.objects.all().filter().order_by('-date_created')
+        serializer_context = {
+            'request': request,
+        }
+        serializer = BotListSerializer(
+            queryset,
+            many=True,
+            context=serializer_context)
+        return response.Response(serializer.data)
+
+    def create(self, request):
+
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            if isinstance(request.data, QueryDict):
+                request.data._mutable = True
+            requested_data = request.data
+            print("requested_data", requested_data)
+            # requested_data = self.validate_requested_data(requested_data)
+            serializer_context = {
+                'request': request,
+            }
+            requested_data.update({
+                "created_by_id": 1,  # auth_result["user"].id,
+                "date_created": datetime.now(tz=timezone.utc),
+            })
+            bot_serializer = BotCreateSerializer(
+                data=requested_data,
+                context=serializer_context)
+            bot_serializer.is_valid(raise_exception=True)
+            bot_serializer.save()
+            result.update({
+                "message": "bot created",
+                "status": "success",
+                "response": {"bot_id": bot_serializer.data["id"]}
+            })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
+        print("result", result)
+        return response.Response(result)
+
+    def retrieve(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        queryset = Bots.objects.all()
+        bot = get_object_or_404(queryset, pk=pk)
+        serializer_context = {
+            'request': request,
+        }
+        serializer = BotRetrieveSerializer(
+            bot, context=serializer_context)
+        bot_details = json.loads(renderers.JSONRenderer().render(
+            serializer.data).decode())
+
+        bot_details.update({
+            "bot_id_text": "%s%s" % (str(bot_details["name"]), str(bot_details["id"]).zfill(4)),
+        })
+        return response.Response(bot_details)
+
+    def update(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            if isinstance(request.data, QueryDict):
+                request.data._mutable = True
+            requested_data = request.data
+            print("requested_data", requested_data)
+            # requested_data = self.validate_requested_data(requested_data)
+            requested_data.update({
+                "updated_by_id": 1,  # auth_result["user"].id,
+                "date_modified": datetime.now(tz=timezone.utc),
+            })
+            queryset = Bots.objects.all()
+            bot = get_object_or_404(queryset, pk=pk)
+
+            serializer_context = {
+                'request': request,
+            }
+            bot_serializer = BotUpdateSerializer(
+                bot,
+                data=requested_data,
+                context=serializer_context
+            )
+            bot_serializer.is_valid(raise_exception=True)
+            bot_serializer.save()
+            result.update({
+                "message": "bot updated",
+                "status": "success",
+                "response": {"bot_id": int(pk)}
+            })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
+        print("result", result)
+        return response.Response(result)
+
+    def delete(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            queryset = Bots.objects.all()
+            bot = get_object_or_404(queryset, pk=pk)
+            bot.delete()
+            result.update({
+                "message": "bot deleted.",
+                "status": "success"
+            })
+        except Exception as e:
+            result.update(exception_handler(e))
+        return response.Response(result)
+
+
+class CustomerBotViewSet(viewsets.ViewSet):
+
+    serializer_class = CustomerBotSerializer
+
+    def list(self, request):
+        queryset = CustomerBots.objects.all().filter().order_by('-date_created')
+        serializer_context = {
+            'request': request,
+        }
+        serializer = CustomerBotListSerializer(
+            queryset,
+            many=True,
+            context=serializer_context)
+        return response.Response(serializer.data)
+
+    def create(self, request):
+
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            if isinstance(request.data, QueryDict):
+                request.data._mutable = True
+            requested_data = request.data
+            print("requested_data", requested_data)
+            requested_data = self.validate_requested_data(requested_data)
+            bot_queryset = Bots.objects.all()
+            customer_queryset = Customers.objects.all()
+            bot = get_object_or_404(bot_queryset, pk=requested_data["bot"])
+            customer = get_object_or_404(customer_queryset, pk=requested_data["customer"])
+            serializer_context = {
+                'request': request,
+            }
+            bot_id_text = "%s%s" % (str(bot.name), str(bot.id).zfill(4))
+            requested_data.update({
+                "created_by_id": 1,  # auth_result["user"].id,
+                "date_created": datetime.now(tz=timezone.utc),
+                "bot_id_text": bot_id_text,
+                "customer_id_text": "%s_%s" % (str(customer.org_name), str(bot_id_text)),
+            })
+            bot_serializer = CustomerBotCreateSerializer(
+                data=requested_data,
+                context=serializer_context)
+            bot_serializer.is_valid(raise_exception=True)
+            bot_serializer.save()
+            result.update({
+                "message": "bot mapped to customer",
+                "status": "success",
+                "response": {"mapping_id": bot_serializer.data["id"]}
+            })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+            if "customer_id_text" in result["response"]:
+                result["response"] = {"customer_bot": "mapping already existed."}
+        except Exception as e:
+            result.update(exception_handler(e))
+        print("result", result)
+        return response.Response(result)
+
+    def retrieve(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        queryset = CustomerBots.objects.all()
+        bot = get_object_or_404(queryset, pk=pk)
+        serializer_context = {
+            'request': request,
+        }
+        serializer = CustomerBotRetrieveSerializer(
+            bot, context=serializer_context)
+        bot_details = json.loads(renderers.JSONRenderer().render(
+            serializer.data).decode())
+        return response.Response(bot_details)
+
+    def update(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            if isinstance(request.data, QueryDict):
+                request.data._mutable = True
+            requested_data = request.data
+            print("requested_data", requested_data)
+            # requested_data = self.validate_requested_data(requested_data)
+            requested_data.update({
+                "updated_by_id": 1,  # auth_result["user"].id,
+                "date_modified": datetime.now(tz=timezone.utc),
+            })
+            queryset = CustomerBots.objects.all()
+            customer_bot = get_object_or_404(queryset, pk=pk)
+
+            serializer_context = {
+                'request': request,
+            }
+            bot_serializer = CustomerBotUpdateSerializer(
+                customer_bot,
+                data=requested_data,
+                context=serializer_context
+            )
+            bot_serializer.is_valid(raise_exception=True)
+            bot_serializer.save()
+            result.update({
+                "message": "customer bot mapping updated",
+                "status": "success",
+                "response": {"mapping_id": int(pk)}
+            })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
+        print("result", result)
+        return response.Response(result)
+
+    def delete(self, request, pk=None):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            queryset = CustomerBots.objects.all()
+            bot = get_object_or_404(queryset, pk=pk)
+            bot.delete()
+            result.update({
+                "message": "customer bot deleted.",
+                "status": "success"
+            })
+        except Exception as e:
+            result.update(exception_handler(e))
+        return response.Response(result)
+
+    def validate_requested_data(self, requested_data):
+
+        if 'customer' not in requested_data:
+            raise exceptions.ValidationError({
+                "customer": ["This field is required."]
+            })
+        if 'bot' not in requested_data:
+            raise exceptions.ValidationError({
+                "bot": ["This field is required."]
+            })
+        return requested_data
 
 
 class ClientConfiguration(views.APIView):
@@ -137,15 +661,15 @@ class ClientConfiguration(views.APIView):
             bot_info = Bots.objects.filter(id=bot)
             result["message"] = "invalid bot"
             if bot_info:
-                sections_info = BotQuestions.objects.filter(
+                sections_info = BotConfiguration.objects.filter(
                     bot=bot_info[0]
                 )
                 if sections_info:
-                    BotQuestions.objects.filter(
+                    BotConfiguration.objects.filter(
                         bot=bot_info[0]
                     ).delete()
                 for question in questions:
-                    question_obj = BotQuestions()
+                    question_obj = BotConfiguration()
                     question_obj.bot = bot_info[0]
                     question_obj.question = question["question"]
                     if "description" in question:
@@ -201,7 +725,7 @@ class ClientConfiguration(views.APIView):
             questions_info = json.loads(
                 renderers.JSONRenderer().render(
                     ClientQuestionSerializer(
-                        BotQuestions.objects.filter(
+                        BotConfiguration.objects.filter(
                             bot_id=bot
                         ), many=True
                     ).data
@@ -408,8 +932,9 @@ class ClientForm(views.APIView):
             "response": ""
         }
         try:
-            bot = Bots.objects.get(id=bot_info["bot_id"])  # bot_id will changed to source_url
-            result = ClientConfiguration().retrieve_sections(bot_info["bot_id"])
+            bot_id = bot_info["bot_id"]
+            bot = Bots.objects.get(id=bot_id)  # bot_id will changed to source_url
+            result = ClientConfiguration().retrieve_sections(bot_id)
             if result["status"] == "success":
                 questions = result["response"]
                 result["response"] = ""
@@ -422,9 +947,11 @@ class ClientForm(views.APIView):
                 print('current question', bot_info['question'])
                 if bot_info['question'].lower() != "welcome":
                     print("Check1")
-                    submitted_question = [question for question in questions if question[
-                        'question'
-                    ] == bot_info['question']]
+                    submitted_question = [
+                        question for question in questions if question[
+                            'question'
+                        ] == bot_info['question']
+                    ]
                     if not submitted_question:
                         result["message"] = "invalid question"
                         return result
@@ -438,42 +965,66 @@ class ClientForm(views.APIView):
                     #     return result
                     # next_question = next_question[0]
                     if 'related' in submitted_question:
-                        print('submitted_question relation', submitted_question["related"])
-                        if submitted_question['related']:
+                        is_related = submitted_question['related']
+                        sug_answers = submitted_question['suggested_answers']
+                        sug_jump = submitted_question['suggested_jump']
+                        print('is_related', is_related)
+                        if is_related:
                             print("this is related question")
-                            if len(submitted_question['suggested_answers']) > 0:
+                            if len(sug_answers) > 0:
                                 print("current answer", bot_info["text"])
-                                if bot_info['text'] in submitted_question['suggested_answers']:
-                                    next_index = submitted_question['suggested_answers'].index(bot_info['text'])
+                                if bot_info['text'] in sug_answers:
+                                    next_index = sug_answers.index(
+                                        bot_info['text'])
                                     print('next_index', next_index)
-                                    if isinstance(submitted_question["suggested_jump"], list):
-                                        if next_index < len(submitted_question['suggested_jump']):
-                                            next_question_id = submitted_question['suggested_jump'][next_index]
-                                            print('next_question_id', next_question_id)
-                                            next_question = [question for question in questions if question[
-                                                'question'
-                                            ] == next_question_id][0]
-                                        elif len(submitted_question['suggested_jump']) == 1:
-                                            next_question_id = submitted_question['suggested_jump'][0]
-                                            print('next_question_id', next_question_id)
-                                            next_question = [question for question in questions if question[
-                                                'question'
-                                            ] == next_question_id][0]
+                                    if isinstance(sug_jump, list):
+                                        if next_index < len(sug_jump):
+                                            next_question = sug_jump[
+                                                next_index]
+                                            print('next_question', next_question)
+                                            next_question = [
+                                                question
+                                                for question in questions
+                                                if question[
+                                                    'question'
+                                                ] == next_question
+                                            ][0]
+                                        elif len(sug_jump) == 1:
+                                            next_question = sug_jump[0]
+                                            print('next_question', next_question)
+                                            next_question = [
+                                                question
+                                                for question in questions
+                                                if question[
+                                                    'question'
+                                                ] == next_question
+                                            ][0]
                                     else:
-                                        next_question_id = submitted_question['suggested_jump']
-                                        print('next_question_id', next_question_id)
-                                        next_question = [question for question in questions if question[
-                                            'question'
-                                        ] == next_question_id][0]
+                                        next_question = sug_jump
+                                        print('next_question', next_question)
+                                        next_question = [
+                                            question
+                                            for question in questions
+                                            if question[
+                                                'question'
+                                            ] == next_question
+                                        ][0]
                                 else:
                                     result["message"] = "invalid answer"
                                     return result
                             else:
-                                next_question_id = submitted_question['suggested_jump']
-                                print('next_question_id', next_question_id)
-                                next_question = [question for question in questions if question[
-                                    'question'
-                                ] == next_question_id][0]
+                                if isinstance(sug_jump, list):
+                                    next_question = sug_jump[0]
+                                else:
+                                    next_question = sug_jump
+                                print('next_question', next_question)
+                                next_question = [
+                                    question
+                                    for question in questions
+                                    if question[
+                                        'question'
+                                    ] == next_question
+                                ][0]
                     print('bot', bot)
                     con_obj = Conversation()
                     con_obj.bot = bot
@@ -686,19 +1237,20 @@ class SessionAnalytics(views.APIView):
             result["message"] = "no graph data"
             if sessions:
                 for session in sessions:
-                    session["time_stamp"] = time_stamp_to_date_format(
+                    session["name"] = time_stamp_to_date_format(
                         session["time_stamp"]["$date"]
                     ).split()[0]
+                    del session["time_stamp"]
                 graph_data = unique_and_count(sessions)
-                existed_dates = [record["time_stamp"] for record in graph_data]
+                existed_dates = [record["name"] for record in graph_data]
                 print('existed_dates', existed_dates)
                 for ac_date in actual_dates:
                     if ac_date not in existed_dates:
                         graph_data.append({
-                            "time_stamp": ac_date,
-                            "count": 0
+                            "name": ac_date,
+                            "value": 0
                         })
-                graph_data.sort(key=lambda x: x['time_stamp'])
+                graph_data.sort(key=lambda x: x['name'])
                 result.update({
                     "message": "graph data",
                     "status": "success",
@@ -722,4 +1274,4 @@ def unique_and_count(lst):
 
     """Return a list of unique dicts with a 'count' key added"""
     grouper = groupby(sorted(map(canonicalize_dict, lst)))
-    return [dict(k + [("count", len(list(g)))]) for k, g in grouper]
+    return [dict(k + [("value", len(list(g)))]) for k, g in grouper]

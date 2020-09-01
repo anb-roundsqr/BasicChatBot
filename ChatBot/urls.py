@@ -14,19 +14,25 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, re_path
+from django.urls import path, re_path, include
 from ChatBot.views import (
     ClientConfiguration,
-    Customer,
-    Bot,
+    CustomerViewSet,
+    BotViewSet,
+    CustomerBotViewSet,
     ClientForm,
     SessionAnalytics
 )
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'customers', CustomerViewSet, basename='customers')
+router.register(r'bots', BotViewSet, basename='bots')
+router.register(r'customerbots', CustomerBotViewSet, basename='customerbots')
 
 urlpatterns = [
+    path(r'', include(router.urls)),
     path('admin/', admin.site.urls),
-    re_path(r'customer', Customer.as_view()),
-    re_path(r'bot', Bot.as_view()),
     re_path(r'client-config', ClientConfiguration.as_view()),
     re_path(r'client-form', ClientForm.as_view()),
     re_path(r'session-analytics/(?P<slug>[\w-]+)', SessionAnalytics.as_view()),

@@ -2,7 +2,26 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="51497414-b528-4c07-a16c-fe6b653288bd" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0002_auto_20200811_1657.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0003_botquestions_related.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0004_auto_20200817_1550.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0005_auto_20200824_0123.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0006_auto_20200825_0259.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0007_auto_20200826_0059.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0008_auto_20200826_0105.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0009_auto_20200826_0111.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0010_auto_20200826_0114.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0011_auto_20200826_0115.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0012_auto_20200826_0118.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0013_conversation_chat_source_longitude.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0014_auto_20200826_0136.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,7 +38,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="dev" />
+        <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -55,21 +74,33 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
-    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog" timestamp="1598387983938">
+    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog" timestamp="1598971622796">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog/0.0.1366.728@0.0.1366.728" timestamp="1598387983938" />
+    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog/0.0.1366.728@0.0.1366.728" timestamp="1598971622796" />
+    <state x="129" y="55" key="MergeDialog" timestamp="1598971103566">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state x="129" y="55" key="MergeDialog/0.0.1366.728@0.0.1366.728" timestamp="1598971103566" />
+    <state x="395" y="80" key="MultipleFileMergeDialog" timestamp="1598971599156">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state x="395" y="80" key="MultipleFileMergeDialog/0.0.1366.728@0.0.1366.728" timestamp="1598971599156" />
     <state x="184" y="6" key="SettingsEditor" timestamp="1597035336473">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
     <state x="184" y="6" key="SettingsEditor/0.0.1366.728@0.0.1366.728" timestamp="1597035336473" />
-    <state x="430" y="98" key="VcsDiffUtil.ChangesDialog" timestamp="1598388279036">
+    <state x="430" y="98" key="VcsDiffUtil.ChangesDialog" timestamp="1598971558833">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state x="430" y="98" key="VcsDiffUtil.ChangesDialog/0.0.1366.728@0.0.1366.728" timestamp="1598388279036" />
-    <state x="379" y="188" key="com.intellij.ide.util.TipDialog" timestamp="1598387445893">
+    <state x="430" y="98" key="VcsDiffUtil.ChangesDialog/0.0.1366.728@0.0.1366.728" timestamp="1598971558833" />
+    <state x="379" y="188" key="com.intellij.ide.util.TipDialog" timestamp="1598784879516">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state x="379" y="188" key="com.intellij.ide.util.TipDialog/0.0.1366.728@0.0.1366.728" timestamp="1598387445893" />
+    <state x="379" y="188" key="com.intellij.ide.util.TipDialog/0.0.1366.728@0.0.1366.728" timestamp="1598784879516" />
+    <state x="464" y="77" key="git4idea.branch.GitSmartOperationDialog" timestamp="1598971579034">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state x="464" y="77" key="git4idea.branch.GitSmartOperationDialog/0.0.1366.728@0.0.1366.728" timestamp="1598971579034" />
   </component>
 </project>
