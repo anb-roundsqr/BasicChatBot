@@ -7,10 +7,9 @@ class Customers(models.Model):
 
     objects = models.Manager
 
-    customer_id = models.TextField(null=True)
     name = models.CharField(max_length=200, null=False)
     org_name = models.CharField(max_length=100, unique=True)
-    domain = models.SlugField(unique=True)
+    web_url = models.TextField(unique=True)
     email_id = models.EmailField(
         max_length=200, null=False, blank=False, unique=True)
     mobile = models.BigIntegerField(null=False, blank=False, unique=True)
@@ -30,15 +29,60 @@ class Bots(models.Model):
 
     objects = models.Manager
 
-    BotID = models.TextField(null=True)
-    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
-    bot_type = models.TextField(null=True)
-    domain = models.TextField(null=True)
-    source_url = models.TextField(null=True)
+    name = models.CharField(max_length=200, unique=True)
+    description = models.TextField(null=True)
     model_name = models.CharField(max_length=125, null=True)
+    date_created = models.DateTimeField(null=False, blank=False)
+    date_modified = models.DateTimeField(null=True, blank=True)
+    created_by_id = models.IntegerField(null=True)
+    updated_by_id = models.IntegerField(null=True)
 
     class Meta:
         app_label = 'ChatBot'
+
+
+class CustomerBots(models.Model):
+
+    objects = models.Manager
+
+    """
+    name: string;
+    title: string;
+    server_IP: string;
+    type: string;
+    status: boolean;
+    """
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
+    bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
+    customer_id_text = models.TextField(max_length=100, null=False, unique=True)
+    bot_id_text = models.TextField(max_length=150, null=False)
+    source_url = models.TextField(null=False)
+    BOT_TYPE = Choices(
+        ('BASIC', 'basic', _('BASIC')),
+        ('POWER', 'power', _('POWER')),
+    )
+    bot_type = models.CharField(
+        max_length=6,
+        choices=BOT_TYPE
+    )
+    header_colour = models.CharField(max_length=25, default='header_colour')
+    body_colour = models.CharField(max_length=25, default='body_colour')
+    font_type = models.CharField(max_length=25, default='font_type')
+    bot_logo = models.TextField(default='static/images/default/bot_logo.png')
+    chat_logo = models.TextField(default='static/images/default/chat_logo.png')
+    user_logo = models.TextField(default='static/images/default/user_logo.png')
+    bot_bubble_colour = models.CharField(max_length=25, default='bot_bubble_colour')
+    user_bubble_colour = models.CharField(max_length=25, default='user_bubble_colour')
+    chat_bot_font_colour = models.CharField(max_length=25, default='chat_bot_font_colour')
+    chat_user_font_colour = models.CharField(max_length=25, default='chat_user_font_colour')
+    date_created = models.DateTimeField(null=False, blank=False)
+    date_modified = models.DateTimeField(null=True, blank=True)
+    created_by_id = models.IntegerField(null=True)
+    updated_by_id = models.IntegerField(null=True)
+
+    class Meta:
+        app_label = 'ChatBot'
+        db_table = '%s_customer_bots' % app_label
 
 
 class Conversation(models.Model):
@@ -64,7 +108,7 @@ class Conversation(models.Model):
         app_label = 'ChatBot'
 
 
-class BotQuestions(models.Model):  # BotConfiguration
+class BotConfiguration(models.Model):
 
     objects = models.Manager
 
