@@ -932,9 +932,10 @@ class ClientForm(views.APIView):
             "response": ""
         }
         try:
-            bot_id = bot_info["bot_id"]
-            bot = Bots.objects.get(id=bot_id)  # bot_id will changed to source_url
-            result = ClientConfiguration().retrieve_sections(bot_id)
+            # bot_id = bot_info["bot_id"]
+            source_url = bot_info["location"]
+            customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
+            result = ClientConfiguration().retrieve_sections(customer_bot.bot_id)
             if result["status"] == "success":
                 questions = result["response"]
                 result["response"] = ""
@@ -1025,10 +1026,10 @@ class ClientForm(views.APIView):
                                         'question'
                                     ] == next_question
                                 ][0]
-                    print('bot', bot)
+                    print('bot', customer_bot.bot)
                     con_obj = Conversation()
-                    con_obj.bot = bot
-                    con_obj.customer = bot.customer
+                    con_obj.bot = customer_bot.bot
+                    con_obj.customer = customer_bot.customer
                     con_obj.text = bot_info["text"]
                     con_obj.ip_address = bot_info["ip"]
                     con_obj.session_id = bot_info["sessionId"]
@@ -1060,8 +1061,8 @@ class ClientForm(views.APIView):
                     "response": required_next_question
                 }
                 con_obj = Conversation()
-                con_obj.bot = bot
-                con_obj.customer = bot.customer
+                con_obj.bot = customer_bot.bot
+                con_obj.customer = customer_bot.customer
                 con_obj.text = required_next_question["question"]
                 con_obj.ip_address = bot_info["ip"]
                 con_obj.session_id = bot_info["sessionId"]
@@ -1091,8 +1092,8 @@ class ClientForm(views.APIView):
             message = "bot_info must be dict"
             if isinstance(bot_obj, dict):
                 message = ""
-                if "bot_id" not in bot_obj:
-                    message = "bot_id missing in 'bot_info'"
+                # if "bot_id" not in bot_obj:
+                #     message = "bot_id missing in 'bot_info'"
                 if "question" in bot_obj:
                     if 'text' not in bot_obj:
                         message = "text missing in 'bot_info'"
@@ -1100,6 +1101,9 @@ class ClientForm(views.APIView):
                     message = "ip missing in 'bot_info'"
                 if "sessionId" not in bot_obj:
                     message = "sessionId missing in 'bot_info'"
+                if "location" not in bot_obj:
+                    message = "location missing in 'bot_info'"
+
         return message, bot_obj
 
 
