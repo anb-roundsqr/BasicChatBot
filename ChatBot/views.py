@@ -41,6 +41,11 @@ from django.db.models.expressions import RawSQL
 from django.http.request import QueryDict
 from django.shortcuts import get_object_or_404
 import re
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
+from ChatBot.settings import STATICFILES_DIRS
+import time
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -1279,3 +1284,81 @@ def unique_and_count(lst):
     """Return a list of unique dicts with a 'count' key added"""
     grouper = groupby(sorted(map(canonicalize_dict, lst)))
     return [dict(k + [("value", len(list(g)))]) for k, g in grouper]
+
+
+class AssetsUploader(views.APIView):
+
+    def post(self, request, **kwargs):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "resource not found",
+            "status": "failed"
+        }
+        try:
+            if kwargs["slug"] in ['image', 'file']:
+                if request.FILES["asset"]:
+                    return self.assets_upload_processor(
+                        kwargs["slug"],
+                        request.FILES["asset"]
+                    )
+                else:
+                    result["message"] = "please upload an asset"
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        return response.Response(result)
+
+    def assets_upload_processor(self, asset_type, asset):
+
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            fileName = asset.name
+            fileType = fileName.split('.')[-1]
+            ASSET_DIR = ""
+            if asset_type == "image":
+                result["message"] = "only 'png', 'jpg', 'jpeg' files are allowed."
+                if fileType in ("png", "jpg", "jpeg"):
+                    ASSET_DIR = os.path.join(
+                        STATICFILES_DIRS[0],
+                        'images',
+                        'logos'
+                    )
+
+            elif asset_type == 'file':
+                result["message"] = "only 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
+                if fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
+                    ASSET_DIR = os.path.join(
+                        STATICFILES_DIRS[0],
+                        'documents'
+                    )
+            if ASSET_DIR:
+                if not os.path.exists(ASSET_DIR):
+                    os.makedirs(ASSET_DIR)
+                filePath = os.path.join(
+                    ASSET_DIR,
+                    str(int(time.time())) + "_" + fileName
+                )
+                filePath = filePath.replace(" ", '_')
+                default_storage.save(
+                    "%s" % filePath,
+                    ContentFile(asset.read())
+                )  # to default storage file path address
+                path = 'static%s' % str(filePath.split('static')[1])
+                result.update({
+                    "message": "asset uploaded successfully",
+                    "status": "success",
+                    "response": path
+                })
+        except Exception as e:
+            result.update(exception_handler(e))
+        return response.Response(result)
