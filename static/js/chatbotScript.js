@@ -9,28 +9,10 @@ function onLoad() {
     }
 }
 
-function funCss(location_Url) {
-    var Url = "http://18.221.57.172:8000/client-css";
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', Url, true);
-    var data = JSON.stringify({
-        "location_Url": location_Url
-    });
-    xhr.send(data);
-    xhr.onreadystatechange = processRequest;
-    function processRequest(e) {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-
-            var ajaxResponse = JSON.parse(xhr.responseText);
-
-            console.log(ajaxResponse);
-        }
-    }
-}
 
 function funChatbox(text_msgs, ques_msg) {
-    console.log(text_msgs)
-    console.log(ques_msg)
+    // console.log(text_msgs)
+    // console.log(ques_msg)
 
     var textmsg;
     if (text_msgs == '') {
@@ -46,7 +28,7 @@ function funChatbox(text_msgs, ques_msg) {
         question = ques_msg;
     }
 
-    console.log(document.getElementById("resquestion").innerHTML);
+    // console.log(document.getElementById("resquestion").innerHTML);
 
     /* var question;
     if (ques_msg != 'welcome') {
@@ -60,6 +42,7 @@ function funChatbox(text_msgs, ques_msg) {
     xhr.open('POST', Url, true);
     var data = JSON.stringify({
         "bot_id": 1,
+        "location": "www.apollo.com/careers",
         "question": question,
         "text": textmsg,
         "ip": "192.168.0.1",
@@ -75,7 +58,7 @@ function funChatbox(text_msgs, ques_msg) {
             //document.forms["myForm"]["text_msg"].value = "";
             document.getElementById("txtmsgid").value = "";
 
-            console.log(ajaxResponse);
+            // console.log(ajaxResponse);
 
             showResponse(ajaxResponse);
         }
@@ -132,7 +115,7 @@ function showResponse(ajaxResponse) {
 
             var newItem_oc2 = document.createElement('div');
             newItem_oc2.className = ('outgoing-chats-img');
-            newItem_oc2.innerHTML = ('<img src="imgs/user.png">');
+            newItem_oc2.innerHTML = ('<img src="imgs/user1.png">');
             newItem_oc.appendChild(newItem_oc2);
 
             newItem_oc.scrollTop = newItem_oc.scrollHeight;
@@ -165,12 +148,84 @@ function showResponse(ajaxResponse) {
         document.getElementById("bolForm").style.display = "none";
     }
 
+    if (ajaxResponse[0].answer_type == 'FILE') {
+        document.getElementById("fileForm").style.display = "block";
+    } else {
+        document.getElementById("fileForm").style.display = "none";
+    }
+
 
     // if (ajaxResponse[0].is_last_question == false) {
     //     document.getElementById("bolChat").style.pointerEvents = "auto";
     // } else {
     //     document.getElementById("bolChat").style.pointerEvents = "none";
     // }
+}
+
+
+async function SaveFile(res) 
+{
+    let formData = new FormData();
+    let file = res.files[0];      
+    let textmsg=file.name;
+    let filePath;
+    let response;
+    formData.append("asset", file);  
+    
+    try {
+       let r = await fetch('http://18.221.57.172:8000/assets/file', {method: "POST", body: formData})
+       .then(response => response.text())
+        .then(data => 
+            response = JSON.parse(data));
+        console.log(response)
+
+        if(response.status == 'success') {
+            filePath = response.response;
+            funFileMsg(textmsg, filePath);
+        }
+    } catch(e) {
+       console.log('Abhee we have problem...:', e);
+    }
+    
+}
+
+function funFileMsg(textmsg, filePath) {
+
+    if (textmsg) {
+        textmsg = textmsg;
+        // console.log(textmsg)
+        // console.log(filePath)
+        // console.log(document.getElementById("resquestion").innerHTML);
+        var responseContainer = document.querySelector('#responseContainer');
+
+        var newItem_oc = document.createElement('div');
+        newItem_oc.className = ('outgoing-chats');
+
+        var newItem_oc1 = document.createElement('div');
+        newItem_oc1.className = ('outgoing-chats-msg');
+        var para_oc = document.createElement('p');
+
+        var span_oc = document.createElement('span');
+        //span_oc.innerHTML = document.forms["myForm"]["text_msg"].value;
+        span_oc.innerHTML = textmsg;
+        para_oc.appendChild(span_oc);
+        newItem_oc1.appendChild(para_oc);
+        newItem_oc.appendChild(newItem_oc1);
+
+        var newItem_oc2 = document.createElement('div');
+        newItem_oc2.className = ('outgoing-chats-img');
+        newItem_oc2.innerHTML = ('<img src="imgs/user1.png">');
+        newItem_oc.appendChild(newItem_oc2);
+
+        newItem_oc.scrollTop = newItem_oc.scrollHeight;
+
+        responseContainer.appendChild(newItem_oc);
+        responseContainer.scrollTop = responseContainer.scrollHeight;
+
+        funChatbox(filePath, '');
+    } else {
+        alert("Please enter your Text Message.")
+    }
 }
 
 
@@ -199,14 +254,14 @@ function funTextMsg() {
 
         var span_oc = document.createElement('span');
         //span_oc.innerHTML = document.forms["myForm"]["text_msg"].value;
-        span_oc.innerHTML = document.getElementById("txtmsgid").value;
+        span_oc.innerHTML = document.getElementById("txtmsgid").value;;
         para_oc.appendChild(span_oc);
         newItem_oc1.appendChild(para_oc);
         newItem_oc.appendChild(newItem_oc1);
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        newItem_oc2.innerHTML = ('<img src="imgs/user.png">');
+        newItem_oc2.innerHTML = ('<img src="imgs/user1.png">');
         newItem_oc.appendChild(newItem_oc2);
 
         newItem_oc.scrollTop = newItem_oc.scrollHeight;
@@ -219,3 +274,4 @@ function funTextMsg() {
         alert("Please enter your Text Message.")
     }
 }
+
