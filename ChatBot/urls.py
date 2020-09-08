@@ -21,7 +21,7 @@ from ChatBot.views import (
     BotViewSet,
     CustomerBotViewSet,
     ClientForm,
-    SessionAnalytics,
+    Analytics,
     AssetsUploader,
 )
 from rest_framework.routers import DefaultRouter
@@ -36,6 +36,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'client-config', ClientConfiguration.as_view()),
     re_path(r'client-form', ClientForm.as_view()),
-    re_path(r'session-analytics/(?P<slug>[\w-]+)', SessionAnalytics.as_view()),
+    re_path(r'analytics/(?P<slug>[\w-]+)', Analytics.as_view()),
     re_path(r'assets/(?P<slug>[\w-]+)', AssetsUploader.as_view()),
 ]

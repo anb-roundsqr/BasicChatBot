@@ -1362,3 +1362,82 @@ class AssetsUploader(views.APIView):
         except Exception as e:
             result.update(exception_handler(e))
         return response.Response(result)
+
+
+class Analytics(views.APIView):
+
+    def get(self, request, **kwargs):
+
+        result = {
+            "message": "Value required for 'days_count' field.",
+            "status": "failed"
+        }
+        try:
+            days_count = 30
+            if "days_count" in request.query_params:
+                days_count = int(request.query_params["days_count"])
+            result.update(self.process_metrics(days_count, kwargs["slug"]))
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except ValueError:
+            result["message"] = "'days_count' must be integer."
+        print("result", result)
+        return response.Response(result)
+
+    def process_metrics(self, days_count, grpah_type):
+
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            current_date = datetime.now(tz=timezone.utc)
+            start_date = current_date - timedelta(days=days_count)
+            print('current_date', current_date.date())
+            print('start_date', start_date.date())
+            actual_dates = []
+            for i in range(days_count):
+                actual_dates.append(
+                    datetime.strftime(
+                        start_date + timedelta(days=i),
+                        "%Y-%m-%d"
+                    )
+                )
+            print('actual_dates', actual_dates)
+            sessions = Conversation.objects.filter(
+                time_stamp__date__gte=start_date.date(),
+                time_stamp__date__lt=current_date.date()
+            ).values('time_stamp')
+            sessions = json.loads(dumps(sessions))
+            print('sessions', sessions)
+            result["message"] = "no graph data"
+            if sessions:
+                for session in sessions:
+                    session["name"] = time_stamp_to_date_format(
+                        session["time_stamp"]["$date"]
+                    ).split()[0]
+                    del session["time_stamp"]
+                graph_data = unique_and_count(sessions)
+                existed_dates = [record["name"] for record in graph_data]
+                print('existed_dates', existed_dates)
+                for ac_date in actual_dates:
+                    if ac_date not in existed_dates:
+                        graph_data.append({
+                            "name": ac_date,
+                            "value": 0
+                        })
+                graph_data.sort(key=lambda x: x['name'])
+                result.update({
+                    "message": "graph data",
+                    "status": "success",
+                    "response": graph_data
+                })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            print("exception")
+            result.update(exception_handler(e))
+        return result
