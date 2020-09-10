@@ -67,23 +67,35 @@ function funChatbox(text_msgs, ques_msg) {
 
 function showResponse(ajaxResponse) {
     var responseContainer = document.querySelector('#responseContainer');
+    //body background colour
+    // responseContainer.style.backgroundColor = '#fcfcfc';
+
     var linebreak = document.createElement("br");
 
     var newItem = document.createElement('div');
     newItem.className = ('received-chats');
+    //bot div complete element colour
+    // newItem.style.backgroundColor = '#e5e5e5';
 
     var newItem1 = document.createElement('div');
     newItem1.className = ('received-chats-img');
-    newItem1.innerHTML = ('<img src="imgs/chat_new.png">');
+    var botImg = "http://18.221.57.172:8000/static/images/default/chat_new.png";
+    newItem1.innerHTML = ('<img src= '+botImg+'>');
     newItem.appendChild(newItem1);
 
     var newItem2 = document.createElement('div');
     newItem2.className = ('received-msg');
 
+
     var newItem21 = document.createElement('div');
     newItem21.className = ('received-msg-inbox');
+    //font color of bot msg
+    // newItem21.style.color = '#ccffff';
+    //bot chat bubble backgroundcolor
+    // newItem21.style.backgroundColor = '#ccffff';
+
     var para = document.createElement('p');
-    // document.getElementsByClassName("received-msg-inbox").style.color = "blue";
+
 
     var span = document.createElement('span');
     span.innerHTML = ajaxResponse[0].question;
@@ -102,10 +114,19 @@ function showResponse(ajaxResponse) {
 
             var newItem_oc = document.createElement('div');
             newItem_oc.className = ('outgoing-chats');
+            //user chat container background color
+            // newItem_oc.style.backgroundColor = '#ccffff';
+
 
             var newItem_oc1 = document.createElement('div');
             newItem_oc1.className = ('outgoing-chats-msg');
             var para_oc = document.createElement('p');
+            //user chat bubble backgroundcolor
+            //para_oc.style.backgroundColor = '#ccffff';
+            //user chat text color
+            // para_oc.style.color = '#ccffff';
+
+
 
             var span_oc = document.createElement('span');
             span_oc.innerHTML = btnValue;
@@ -115,7 +136,8 @@ function showResponse(ajaxResponse) {
 
             var newItem_oc2 = document.createElement('div');
             newItem_oc2.className = ('outgoing-chats-img');
-            newItem_oc2.innerHTML = ('<img src="imgs/user1.png">');
+            var userImg = "http://18.221.57.172:8000/static/images/default/user1.png";
+            newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
             newItem_oc.appendChild(newItem_oc2);
 
             newItem_oc.scrollTop = newItem_oc.scrollHeight;
@@ -214,7 +236,8 @@ function funFileMsg(textmsg, filePath) {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        newItem_oc2.innerHTML = ('<img src="imgs/user1.png">');
+        var userImg = "http://18.221.57.172:8000/static/images/default/user1.png";
+        newItem_oc2.innerHTML = ('<img src='+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
         newItem_oc.scrollTop = newItem_oc.scrollHeight;
@@ -261,7 +284,8 @@ function funTextMsg() {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        newItem_oc2.innerHTML = ('<img src="imgs/user1.png">');
+        var userImg = "http://18.221.57.172:8000/static/images/default/user1.png";
+        newItem_oc2.innerHTML = ('<img src='+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
         newItem_oc.scrollTop = newItem_oc.scrollHeight;
