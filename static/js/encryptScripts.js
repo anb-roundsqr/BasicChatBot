@@ -19,7 +19,7 @@
     var link = document.createElement("LINK");
     link.setAttribute("rel", "stylesheet");
     link.setAttribute("type", "text/css");
-    link.setAttribute("href", "http://18.221.57.172:8000/static/js/style.css");
+    link.setAttribute("href", "http://18.221.57.172:8000/static/css/style.css");
     document.head.appendChild(link);
 
     var link1 = document.createElement("LINK");
