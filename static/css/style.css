@@ -1,13 +1,13 @@
-html,
+/* html,
 body {
     padding: 0px;
     margin: 0px;
-    /* background-image: url('imgs/bg1.jpg'); */
+    background-image: url('imgs/bg1.jpg');
     background-image: url('http://18.221.57.172:8000/static/images/default/bg1.jpg');
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
-}
+} */
 
 #box {
     position: fixed;
@@ -18,7 +18,7 @@ body {
     top: 90%;
     left: 94%;
     cursor: pointer;
-    z-index: 2;
+    z-index: 9;
     transition: all .4s ease-in-out;
 }
 
@@ -37,11 +37,11 @@ body {
     background: #fff;
     top: 100px;
     left: 71%;
-    z-index: -1;
+    z-index: 9;
     overflow: hidden;
     border-radius: 14px;
     display: none;
-    box-shadow: 0px 1px 14px rgba(196, 255, 252, 0.4);
+    box-shadow: 0px 1px 14px rgb(248, 20, 4);
 }
 
 #chat-box #mydiv {

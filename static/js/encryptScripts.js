@@ -7,7 +7,7 @@
     var startingTime = new Date().getTime();
     // Load the script
     var script = document.createElement('script');
-    script.src = 'chatbotScript.js';
+    script.src = 'http://18.221.57.172:8000/static/js/chatbotScript.js';
     script.type = 'text/javascript';
     document.getElementsByTagName('head')[0].appendChild(script);
 
@@ -19,7 +19,7 @@
     var link = document.createElement("LINK");
     link.setAttribute("rel", "stylesheet");
     link.setAttribute("type", "text/css");
-    link.setAttribute("href", "style.css");
+    link.setAttribute("href", "http://18.221.57.172:8000/static/js/style.css");
     document.head.appendChild(link);
 
     var link1 = document.createElement("LINK");
