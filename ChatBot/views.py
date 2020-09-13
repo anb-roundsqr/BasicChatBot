@@ -591,6 +591,43 @@ class CustomerBotViewSet(viewsets.ViewSet):
         return requested_data
 
 
+class BotProperties(views.APIView):
+
+    def get(self, request):
+
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            if request.query_params["source_url"]:
+                queryset = CustomerBots.objects.all()
+                bot = get_object_or_404(queryset, source_url=request.query_params["source_url"])
+                serializer_context = {
+                    'request': request,
+                }
+                serializer = CustomerBotRetrieveSerializer(
+                    bot, context=serializer_context)
+                bot_details = json.loads(renderers.JSONRenderer().render(
+                    serializer.data).decode())
+                result.update({
+                    "message": "",
+                    "status": "success",
+                    "response": bot_details
+                })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
+        print("result", result)
+        return response.Response(result)
+
+
 class ClientConfiguration(views.APIView):
 
     def get(self, request):
