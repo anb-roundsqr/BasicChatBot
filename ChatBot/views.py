@@ -596,7 +596,7 @@ class BotProperties(views.APIView):
     def get(self, request):
 
         result = {
-            "message": "",
+            "message": "source_url must be required",
             "status": "failed"
         }
         try:
@@ -611,7 +611,7 @@ class BotProperties(views.APIView):
                 bot_details = json.loads(renderers.JSONRenderer().render(
                     serializer.data).decode())
                 result.update({
-                    "message": "",
+                    "message": "bot ui properties",
                     "status": "success",
                     "response": bot_details
                 })
