@@ -601,15 +601,20 @@ class ClientConfiguration(views.APIView):
         :return:
         """
         result = {
-            "message": "bot must be non empty",
+            "message": "customer must be non empty",
             "response": "",
             "status": "failed"
         }
         try:
-            if request.query_params["bot"] != "":
-                result.update(
-                    self.retrieve_sections(request.query_params["bot"])
-                )
+            if request.query_params["customer"] != "":
+                result["message"] = "customer must be non empty"
+                if request.query_params["bot"] != "":
+                    result.update(
+                        self.retrieve_sections(
+                            request.query_params["customer"],
+                            request.query_params["bot"]
+                        )
+                    )
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -626,20 +631,22 @@ class ClientConfiguration(views.APIView):
         :return:
         """
         result = {
-            "message": "bot must be non empty",
+            "message": "customer must be non empty",
             "response": "",
             "status": "failed"
         }
         try:
-            if request.data["bot"] != "":
-                result["message"], questions = self.validate_questions(
-                    request.data["questions"]
-                )
-                if result["message"] == "":
-                    result = self.create_or_update_sections(
-                        request.data["bot"],
-                        questions,
+            if request.data["customer"] != "":
+                if request.data["bot"] != "":
+                    result["message"], questions = self.validate_questions(
+                        request.data["questions"]
                     )
+                    if result["message"] == "":
+                        result = self.create_or_update_sections(
+                            request.data["customer"],
+                            request.data["bot"],
+                            questions,
+                        )
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -648,9 +655,10 @@ class ClientConfiguration(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def create_or_update_sections(self, bot, questions):
+    def create_or_update_sections(self, customer, bot, questions):
 
         """
+        :param customer:
         :param questions:
         :param bot
         :return result:
@@ -663,56 +671,66 @@ class ClientConfiguration(views.APIView):
             "message": ""
         }
         try:
-            bot_info = Bots.objects.filter(id=bot)
-            result["message"] = "invalid bot"
-            if bot_info:
-                sections_info = BotConfiguration.objects.filter(
-                    bot=bot_info[0]
-                )
-                if sections_info:
-                    BotConfiguration.objects.filter(
+            customer_info = Customers.objects.filter(id=customer)
+            result["message"] = "invalid customer"
+            if customer_info:
+                bot_info = Bots.objects.filter(id=bot)
+                result["message"] = "invalid bot"
+                if bot_info:
+                    sections_info = BotConfiguration.objects.filter(
+                        customer=customer_info[0],
                         bot=bot_info[0]
-                    ).delete()
-                for question in questions:
-                    question_obj = BotConfiguration()
-                    question_obj.bot = bot_info[0]
-                    question_obj.question = question["question"]
-                    if "description" in question:
-                        question_obj.description = question["description"]
-                    question_obj.question_id = question["question_id"]
-                    question_obj.answer_type = question[
-                        "answer_type"
-                    ].upper()
-                    if question['answer_type'].lower() in [
-                        'select',
-                        'checkbox',
-                        'radio'
-                    ]:
-                        question_obj.suggested_answers = question[
-                            "suggested_answers"
-                        ]
-                    if "suggested_jump" in question:
-                        question_obj.suggested_jump = question[
-                            "suggested_jump"
-                        ]
-                    if question["answer_type"].lower() in [
-                        'text',
-                        'number'
-                    ]:
-                        question_obj.validation1 = question["validation1"]
-                        question_obj.validation2 = question["validation2"]
-                        question_obj.error_msg = question["error_msg"]
-                    question_obj.required = question["required"]
-                    question_obj.related = question["related"]
-                    # question_obj.created_by_id = auth_result["user"].id
-                    question_obj.date_created = datetime.now(
-                        tz=timezone.utc
                     )
-                    question_obj.save()
-                result.update({
-                    "message": "bot configuration done",
-                    "status": "success"
-                })
+                    if sections_info:
+                        BotConfiguration.objects.filter(
+                            customer=customer_info[0],
+                            bot=bot_info[0]
+                        ).delete()
+                    for question in questions:
+                        question_obj = BotConfiguration()
+                        question_obj.customer = customer_info[0]
+                        question_obj.bot = bot_info[0]
+                        question_obj.question = question["question"]
+                        if "description" in question:
+                            question_obj.description = question["description"]
+                        question_obj.question_id = question["question_id"]
+                        question_obj.answer_type = question[
+                            "answer_type"
+                        ].upper()
+                        if question['answer_type'].lower() in [
+                            'select',
+                            'checkbox',
+                            'radio'
+                        ]:
+                            question_obj.suggested_answers = question[
+                                "suggested_answers"
+                            ]
+                        if "suggested_jump" in question:
+                            question_obj.suggested_jump = question[
+                                "suggested_jump"
+                            ]
+                        if question["answer_type"].lower() in [
+                            'text',
+                            'number'
+                        ]:
+                            question_obj.validation1 = question["validation1"]
+                            question_obj.validation2 = question["validation2"]
+                            question_obj.error_msg = question["error_msg"]
+                        question_obj.required = question["required"]
+                        question_obj.related = question["related"]
+                        # question_obj.created_by_id = auth_result["user"].id
+                        question_obj.date_created = datetime.now(
+                            tz=timezone.utc
+                        )
+                        if "is_last_question" in question:
+                            question_obj.is_last_question = question["is_last_question"]
+                        if "is_lead_gen_question" in question:
+                            question_obj.is_lead_gen_question = question["is_lead_gen_question"]
+                        question_obj.save()
+                    result.update({
+                        "message": "bot configuration done",
+                        "status": "success"
+                    })
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
         except Exception as e:
@@ -720,7 +738,7 @@ class ClientConfiguration(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def retrieve_sections(self, bot):
+    def retrieve_sections(self, customer, bot):
 
         result = {
             "status": "failed",
@@ -731,6 +749,7 @@ class ClientConfiguration(views.APIView):
                 renderers.JSONRenderer().render(
                     ClientQuestionSerializer(
                         BotConfiguration.objects.filter(
+                            customer_id=customer,
                             bot_id=bot
                         ), many=True
                     ).data
@@ -887,6 +906,17 @@ class ClientConfiguration(views.APIView):
                             else:
                                 question["related"] = False
                             print('related', question['related'])
+                        if "is_last_question" in question:
+                            if question["is_last_question"] == "true":
+                                question["is_last_question"] = True
+                            else:
+                                question["is_last_question"] = False
+                        if "is_lead_gen_question" in question:
+                            if question["is_lead_gen_question"] == "true":
+                                question["is_lead_gen_question"] = True
+                            else:
+                                question["is_lead_gen_question"] = False
+
                         if question['answer_type'].lower() in [
                             'select',
                             'checkbox',
@@ -940,7 +970,7 @@ class ClientForm(views.APIView):
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
             customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
-            result = ClientConfiguration().retrieve_sections(customer_bot.bot_id)
+            result = ClientConfiguration().retrieve_sections(customer_bot.customer_id, customer_bot.bot_id)
             if result["status"] == "success":
                 questions = result["response"]
                 result["response"] = ""

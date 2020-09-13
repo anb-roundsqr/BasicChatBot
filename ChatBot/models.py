@@ -65,16 +65,16 @@ class CustomerBots(models.Model):
         max_length=6,
         choices=BOT_TYPE
     )
-    header_colour = models.CharField(max_length=25, default='header_colour')
-    body_colour = models.CharField(max_length=25, default='body_colour')
-    font_type = models.CharField(max_length=25, default='font_type')
+    header_colour = models.CharField(max_length=25, default='#000000')
+    body_colour = models.CharField(max_length=25, default='#FFFFFFF')
+    font_type = models.CharField(max_length=25, default='Arial, Helvitica')
     bot_logo = models.TextField(default='static/images/default/bot_logo.png')
-    chat_logo = models.TextField(default='static/images/default/chat_logo.png')
-    user_logo = models.TextField(default='static/images/default/user_logo.png')
-    bot_bubble_colour = models.CharField(max_length=25, default='bot_bubble_colour')
-    user_bubble_colour = models.CharField(max_length=25, default='user_bubble_colour')
-    chat_bot_font_colour = models.CharField(max_length=25, default='chat_bot_font_colour')
-    chat_user_font_colour = models.CharField(max_length=25, default='chat_user_font_colour')
+    chat_logo = models.TextField(default='static/images/default/chat.png')
+    user_logo = models.TextField(default='static/images/default/user_logo.jpg')
+    bot_bubble_colour = models.CharField(max_length=25, default='#C0C0C0')
+    user_bubble_colour = models.CharField(max_length=25, default='#606060')
+    chat_bot_font_colour = models.CharField(max_length=25, default='#000000')
+    chat_user_font_colour = models.CharField(max_length=25, default='#FFFFFF')
     date_created = models.DateTimeField(null=False, blank=False)
     date_modified = models.DateTimeField(null=True, blank=True)
     created_by_id = models.IntegerField(null=True)
@@ -113,10 +113,11 @@ class BotConfiguration(models.Model):
     objects = models.Manager
 
     id = models.AutoField(primary_key=True)
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
     question = models.TextField(max_length=250)
     description = models.TextField(max_length=500, null=True)
-    question_id = models.IntegerField()
+    question_id = models.IntegerField()  # UI Purpose
     ANSWER_TYPE = Choices(
         ('TEXT', 'text', _('TEXT')),
         ('NUMBER', 'number', _('NUMBER')),
@@ -139,6 +140,8 @@ class BotConfiguration(models.Model):
     is_deleted = models.BooleanField(default=False)
     required = models.CharField(max_length=4, default="no")
     related = models.BooleanField(default=False)
+    is_last_question = models.BooleanField(default=False)
+    is_lead_gen_question = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'ChatBot'
