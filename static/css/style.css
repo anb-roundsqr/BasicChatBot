@@ -48,7 +48,7 @@ body {
     position: absolute;
     height: 150px;
     width: 150px;
-    background: #ed2329;
+    background: #000000;
     transform: rotate(45deg);
     top: -79px;
     left: -77px;
@@ -69,6 +69,7 @@ body {
     position: absolute;
     height: 65px;
     width: 68px;
+    border-radius: 50%;
     transform: rotate(315deg);
     top: -2px;
     left: -3px;
