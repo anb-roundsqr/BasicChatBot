@@ -8,6 +8,7 @@ function onLoad() {
 async function funCss(location_Url) {
     var Url = "https://18.221.57.172/bot-properties?source_url=";
     var params = location_Url;
+    // var params = 'http://3.23.126.189/page3.html';
     
     try {
        let r = await fetch(Url+params, {method: "GET"})
@@ -57,6 +58,7 @@ function funChatbox(text_msgs, ques_msg, response) {
     var data = JSON.stringify({
         "bot_id": 1,
         "location": window.location.href,
+        // "location" : 'http://3.23.126.189/page3.html',
         "question": question,
         "text": textmsg,
         "ip": '192.168.0.1',
@@ -81,7 +83,9 @@ function funChatbox(text_msgs, ques_msg, response) {
 }
 
 function showResponse(ajaxResponse, response) {
-    console.log(response, "***************")
+    console.log(response);
+    var seconds = new Date().getTime() / 1000;
+    console.log(seconds)
     var css = response.response;
     var responseContainer = document.querySelector('#responseContainer');
     //body background colour
@@ -200,6 +204,9 @@ function showResponse(ajaxResponse, response) {
     // } else {
     //     document.getElementById("bolChat").style.pointerEvents = "none";
     // }
+    var finalSeconds = new Date().getTime() / 1000;
+    console.log(finalSeconds);
+    console.log(finalSeconds-seconds)
 }
 
 
@@ -303,6 +310,7 @@ function doit_onkeypress(event) {
 async function funTextMsg() {
     var Url = "https://18.221.57.172/bot-properties?source_url=";
     var params = window.location.href;
+    // var params = 'http://3.23.126.189/page3.html';
     var css;
     
     try {
@@ -314,6 +322,7 @@ async function funTextMsg() {
 
         if(response.status == 'success') {
             css = response.response;
+            console.log(response)
         }
     } catch(e) {
        console.log('Abhee we have problem...:', e);
@@ -324,7 +333,7 @@ async function funTextMsg() {
 
         console.log(document.getElementById("resquestion").innerHTML);
         var responseContainer = document.querySelector('#responseContainer');
-        responseContainer.style.backgroundColor = css.body_color;
+        responseContainer.style.backgroundColor = css.body_colour;
 
         var newItem_oc = document.createElement('div');
         newItem_oc.className = ('outgoing-chats');
