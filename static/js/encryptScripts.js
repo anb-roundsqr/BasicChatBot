@@ -7,18 +7,19 @@
     var startingTime = new Date().getTime();
     // Load the script
     var script = document.createElement('script');
-    script.src = 'https://18.221.57.172/static/js/chatbotScript.js';
+    script.src = 'https://18.221.57.172/static/js/chatbotScripts.js';
     script.type = 'text/javascript';
     document.getElementsByTagName('head')[0].appendChild(script);
 
-    var script1 = document.createElement('script');
-    script1.src = 'https://18.221.57.172/static/js/jquery-3.3.1.min.js';
-    script1.type = 'text/javascript';
-    document.getElementsByTagName('head')[0].appendChild(script1);
+    // var script1 = document.createElement('script');
+    // script1.src = 'https://18.221.57.172/static/js/jquery-3.3.1.min.js';
+    // script1.type = 'text/javascript';
+    // document.getElementsByTagName('head')[0].appendChild(script1);
 
     var link = document.createElement("LINK");
     link.setAttribute("rel", "stylesheet");
     link.setAttribute("type", "text/css");
+    // link.setAttribute("href", "style.css");
     link.setAttribute("href", "https://18.221.57.172/static/css/style.css");
     document.head.appendChild(link);
 

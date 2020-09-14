@@ -1,16 +1,35 @@
 
 function onLoad() {
     var location_Url = window.location.href;
-    // funCss(location_Url);
-    if(location_Url) {
-        var text_msg = "yes";
-        var question = "welcome";
-        funChatbox(text_msg, question);
+    funCss(location_Url);
+
+}
+
+async function funCss(location_Url) {
+    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var params = location_Url;
+    
+    try {
+       let r = await fetch(Url+params, {method: "GET"})
+       .then(response => response.text())
+        .then(data => 
+            response = JSON.parse(data));
+        console.log(response)
+
+        if(response.status == 'success') {
+            if(location_Url) {
+                var text_msg = "yes";
+                var question = "welcome";
+                funChatbox(text_msg, question, response);
+            }
+        }
+    } catch(e) {
+       console.log('Abhee we have problem...:', e);
     }
 }
 
 
-function funChatbox(text_msgs, ques_msg) {
+function funChatbox(text_msgs, ques_msg, response) {
     
     var textmsg;
     if (text_msgs == '') {
@@ -25,25 +44,21 @@ function funChatbox(text_msgs, ques_msg) {
     } else {
         question = ques_msg;
     }
-
-    // console.log(document.getElementById("resquestion").innerHTML);
-
-    /* var question;
-    if (ques_msg != 'welcome') {
-        question = document.getElementById("resquestion").innerHTML;
-    } else {
-        question = ques_msg;
-    } */
+    var ip;
+    $.getJSON("https://api.ipify.org?format=json", 
+    function(data) { 
+        ip = data.ip;
+    }) 
 
     var Url = "https://18.221.57.172/client-form";
     var xhr = new XMLHttpRequest();
     xhr.open('POST', Url, true);
     var data = JSON.stringify({
         "bot_id": 1,
-        "location": "www.apollo.com/careers",
+        "location": window.location.href,
         "question": question,
         "text": textmsg,
-        "ip": "192.168.0.1",
+        "ip": ip,
         "sessionId": "3c3a3f6a-7cbc-4b99-b058-1734c842c6ec"
     });
     xhr.send(data);
@@ -57,27 +72,31 @@ function funChatbox(text_msgs, ques_msg) {
             document.getElementById("txtmsgid").value = "";
 
             // console.log(ajaxResponse);
+            // console.log(typeof(response))
 
-            showResponse(ajaxResponse);
+            showResponse(ajaxResponse, response);
         }
     }
 }
 
-function showResponse(ajaxResponse) {
+function showResponse(ajaxResponse, response) {
+    console.log(response, "***************")
+    var css = response.response;
     var responseContainer = document.querySelector('#responseContainer');
     //body background colour
-    // responseContainer.style.backgroundColor = '#fcfcfc';
+    responseContainer.style.backgroundColor = css.body_color;
 
     var linebreak = document.createElement("br");
 
     var newItem = document.createElement('div');
     newItem.className = ('received-chats');
     //bot div complete element colour
-    // newItem.style.backgroundColor = '#e5e5e5';
+    // newItem.style.backgroundColor = '#ffffff';
 
     var newItem1 = document.createElement('div');
     newItem1.className = ('received-chats-img');
-    var botImg = "https://18.221.57.172/static/images/default/chat_new.png";
+    var botImg = "https://18.221.57.172/"+css.bot_logo;
+    console.log(botImg)
     newItem1.innerHTML = ('<img src= '+botImg+'>');
     newItem.appendChild(newItem1);
 
@@ -88,9 +107,9 @@ function showResponse(ajaxResponse) {
     var newItem21 = document.createElement('div');
     newItem21.className = ('received-msg-inbox');
     //font color of bot msg
-    // newItem21.style.color = '#ccffff';
+    newItem21.style.color = css.chat_bot_font_colour;
     //bot chat bubble backgroundcolor
-    // newItem21.style.backgroundColor = '#ccffff';
+    newItem21.style.backgroundColor = css.bot_bubble_colour;
 
     var para = document.createElement('p');
 
@@ -120,9 +139,9 @@ function showResponse(ajaxResponse) {
             newItem_oc1.className = ('outgoing-chats-msg');
             var para_oc = document.createElement('p');
             //user chat bubble backgroundcolor
-            //para_oc.style.backgroundColor = '#ccffff';
+            para_oc.style.backgroundColor = css.user_bubble_colour;
             //user chat text color
-            // para_oc.style.color = '#ccffff';
+            para_oc.style.color = css.chat_user_font_colour;
 
 
 
@@ -134,7 +153,7 @@ function showResponse(ajaxResponse) {
 
             var newItem_oc2 = document.createElement('div');
             newItem_oc2.className = ('outgoing-chats-img');
-            var userImg = "https://18.221.57.172/static/images/default/user1.png";
+            var userImg = "https://18.221.57.172/"+css.user_logo;
             newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
             newItem_oc.appendChild(newItem_oc2);
 
@@ -143,7 +162,7 @@ function showResponse(ajaxResponse) {
             responseContainer.appendChild(newItem_oc);
             responseContainer.scrollTop = responseContainer.scrollHeight;
 
-            funChatbox(btnValue, ajaxResponse[0].question);
+            funChatbox(btnValue, ajaxResponse[0].question, response);
 
         });
         span.appendChild(newbtn);
@@ -209,7 +228,24 @@ async function SaveFile(res)
     
 }
 
-function funFileMsg(textmsg, filePath) {
+async function funFileMsg(textmsg, filePath) {
+    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var params = window.location.href;
+    var css;
+    
+    try {
+       let r = await fetch(Url+params, {method: "GET"})
+       .then(response => response.text())
+        .then(data => 
+            response = JSON.parse(data));
+        console.log(response)
+
+        if(response.status == 'success') {
+            css = response.response;
+        }
+    } catch(e) {
+       console.log('Abhee we have problem...:', e);
+    }
 
     if (textmsg) {
         textmsg = textmsg;
@@ -217,6 +253,7 @@ function funFileMsg(textmsg, filePath) {
         // console.log(filePath)
         // console.log(document.getElementById("resquestion").innerHTML);
         var responseContainer = document.querySelector('#responseContainer');
+        responseContainer.style.backgroundColor = css.body_color;
 
         var newItem_oc = document.createElement('div');
         newItem_oc.className = ('outgoing-chats');
@@ -224,6 +261,10 @@ function funFileMsg(textmsg, filePath) {
         var newItem_oc1 = document.createElement('div');
         newItem_oc1.className = ('outgoing-chats-msg');
         var para_oc = document.createElement('p');
+        //user chat bubble backgroundcolor
+        para_oc.style.backgroundColor = css.user_bubble_colour;
+        //user chat text color
+        para_oc.style.color = css.chat_user_font_colour;
 
         var span_oc = document.createElement('span');
         //span_oc.innerHTML = document.forms["myForm"]["text_msg"].value;
@@ -234,8 +275,8 @@ function funFileMsg(textmsg, filePath) {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "https://18.221.57.172/static/images/default/user1.png";
-        newItem_oc2.innerHTML = ('<img src='+userImg+'>');
+        var userImg = "https://18.221.57.172/"+css.user_logo;
+        newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
         newItem_oc.scrollTop = newItem_oc.scrollHeight;
@@ -243,7 +284,7 @@ function funFileMsg(textmsg, filePath) {
         responseContainer.appendChild(newItem_oc);
         responseContainer.scrollTop = responseContainer.scrollHeight;
 
-        funChatbox(filePath, '');
+        funChatbox(filePath, '', response);
     } else {
         alert("Please enter your Text Message.")
     }
@@ -258,13 +299,31 @@ function doit_onkeypress(event) {
     }
 }
 
-function funTextMsg() {
+async function funTextMsg() {
+    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var params = window.location.href;
+    var css;
+    
+    try {
+       let r = await fetch(Url+params, {method: "GET"})
+       .then(response => response.text())
+        .then(data => 
+            response = JSON.parse(data));
+        console.log(response)
+
+        if(response.status == 'success') {
+            css = response.response;
+        }
+    } catch(e) {
+       console.log('Abhee we have problem...:', e);
+    }
 
     if (document.getElementById("txtmsgid").value != '') {
         textmsg = document.getElementById("txtmsgid").value;
 
         console.log(document.getElementById("resquestion").innerHTML);
         var responseContainer = document.querySelector('#responseContainer');
+        responseContainer.style.backgroundColor = css.body_color;
 
         var newItem_oc = document.createElement('div');
         newItem_oc.className = ('outgoing-chats');
@@ -272,6 +331,10 @@ function funTextMsg() {
         var newItem_oc1 = document.createElement('div');
         newItem_oc1.className = ('outgoing-chats-msg');
         var para_oc = document.createElement('p');
+        //user chat bubble backgroundcolor
+        para_oc.style.backgroundColor = css.user_bubble_colour;
+        //user chat text color
+        para_oc.style.color = css.chat_user_font_colour;
 
         var span_oc = document.createElement('span');
         //span_oc.innerHTML = document.forms["myForm"]["text_msg"].value;
@@ -281,9 +344,9 @@ function funTextMsg() {
         newItem_oc.appendChild(newItem_oc1);
 
         var newItem_oc2 = document.createElement('div');
-        newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "https://18.221.57.172/static/images/default/user1.png";
-        newItem_oc2.innerHTML = ('<img src='+userImg+'>');
+        newItem_oc2.className = ('outgoing-chats-img'); 
+        var userImg = "https://18.221.57.172/"+css.user_logo;
+        newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
         newItem_oc.scrollTop = newItem_oc.scrollHeight;
@@ -291,7 +354,7 @@ function funTextMsg() {
         responseContainer.appendChild(newItem_oc);
         responseContainer.scrollTop = responseContainer.scrollHeight;
 
-        funChatbox('', '');
+        funChatbox('', '', response);
     } else {
         alert("Please enter your Text Message.")
     }
