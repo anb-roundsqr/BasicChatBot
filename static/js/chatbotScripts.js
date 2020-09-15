@@ -46,10 +46,10 @@ function funChatbox(text_msgs, ques_msg, response) {
         question = ques_msg;
     }
     var ip;
-    $.getJSON("https://api.ipify.org?format=json", 
-    function(data) { 
-        ip = data.ip;
-    }) 
+    // $.getJSON("https://api.ipify.org?format=json", 
+    // function(data) { 
+    //     ip = data.ip;
+    // }) 
 
     var Url = "https://18.221.57.172/client-form";
     var xhr = new XMLHttpRequest();
