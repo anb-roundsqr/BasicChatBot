@@ -6,7 +6,7 @@ function onLoad() {
 }
 
 async function funCss(location_Url) {
-    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var Url = "http://18.221.57.172/bot-properties?source_url=";
     var params = location_Url;
     // var params = 'http://3.23.126.189/page3.html';
     
@@ -46,12 +46,12 @@ function funChatbox(text_msgs, ques_msg, response) {
         question = ques_msg;
     }
     var ip;
-    // $.getJSON("https://api.ipify.org?format=json", 
+    // $.getJSON("http://api.ipify.org?format=json", 
     // function(data) { 
     //     ip = data.ip;
     // }) 
 
-    var Url = "https://18.221.57.172/client-form";
+    var Url = "http://18.221.57.172/client-form";
     var xhr = new XMLHttpRequest();
     console.log( window.location.href)
     xhr.open('POST', Url, true);
@@ -100,7 +100,7 @@ function showResponse(ajaxResponse, response) {
 
     var newItem1 = document.createElement('div');
     newItem1.className = ('received-chats-img');
-    var botImg = "https://18.221.57.172/"+css.bot_logo;
+    var botImg = "http://18.221.57.172/"+css.bot_logo;
     console.log(botImg)
     newItem1.innerHTML = ('<img src= '+botImg+'>');
     newItem.appendChild(newItem1);
@@ -158,7 +158,7 @@ function showResponse(ajaxResponse, response) {
 
             var newItem_oc2 = document.createElement('div');
             newItem_oc2.className = ('outgoing-chats-img');
-            var userImg = "https://18.221.57.172/"+css.user_logo;
+            var userImg = "http://18.221.57.172/"+css.user_logo;
             newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
             newItem_oc.appendChild(newItem_oc2);
 
@@ -220,7 +220,7 @@ async function SaveFile(res)
     formData.append("asset", file);  
     
     try {
-       let r = await fetch('https://18.221.57.172/assets/file', {method: "POST", body: formData})
+       let r = await fetch('http://18.221.57.172/assets/file', {method: "POST", body: formData})
        .then(response => response.text())
         .then(data => 
             response = JSON.parse(data));
@@ -237,7 +237,7 @@ async function SaveFile(res)
 }
 
 async function funFileMsg(textmsg, filePath) {
-    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var Url = "http://18.221.57.172/bot-properties?source_url=";
     var params = window.location.href;
     var css;
     
@@ -283,7 +283,7 @@ async function funFileMsg(textmsg, filePath) {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "https://18.221.57.172/"+css.user_logo;
+        var userImg = "http://18.221.57.172/"+css.user_logo;
         newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
@@ -308,7 +308,7 @@ function doit_onkeypress(event) {
 }
 
 async function funTextMsg() {
-    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var Url = "http://18.221.57.172/bot-properties?source_url=";
     var params = window.location.href;
     // var params = 'http://3.23.126.189/page3.html';
     var css;
@@ -355,7 +355,7 @@ async function funTextMsg() {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img'); 
-        var userImg = "https://18.221.57.172/"+css.user_logo;
+        var userImg = "http://18.221.57.172/"+css.user_logo;
         newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
