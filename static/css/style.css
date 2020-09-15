@@ -18,7 +18,7 @@ body {
     top: 90%;
     left: 94%;
     cursor: pointer;
-    z-index: 999;
+    z-index: 9999999;
     transition: all .4s ease-in-out;
 }
 
@@ -37,7 +37,7 @@ body {
     background: #fff;
     top: 100px;
     left: 71%;
-    z-index: 9;
+    z-index: 999999999;
     overflow: hidden;
     border-radius: 14px;
     display: none;
