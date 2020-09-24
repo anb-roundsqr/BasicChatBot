@@ -185,6 +185,7 @@ p {
 
 .received-msg-inbox input {
     margin: 2px;
+    justify-content: space-between;
 }
 .time{
     color: #777;
