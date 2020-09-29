@@ -3,6 +3,31 @@ from model_utils import Choices
 from django.utils.translation import ugettext_lazy as _
 
 
+class Admin(models.Model):
+
+    objects = models.Manager()
+
+    name = models.CharField(max_length=100, null=False)
+    mobile = models.BigIntegerField(null=False)
+    email_id = models.EmailField(null=False)
+    password = models.TextField(null=False)
+    date_created = models.DateTimeField(null=False, blank=False)
+    date_modified = models.DateTimeField(null=True, blank=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+    is_logged_in = models.BooleanField(default=False)
+    token = models.TextField(null=True, blank=True)
+    token_expired = models.DateTimeField(null=True, blank=True)
+    is_password_updated = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = 'ChatBot'
+
+    @property
+    def full_name(self):
+        """Returns the person's full name."""
+        return '%s' % self.name
+
+
 class Customers(models.Model):
 
     objects = models.Manager
@@ -13,6 +38,7 @@ class Customers(models.Model):
     email_id = models.EmailField(
         max_length=200, null=False, blank=False, unique=True)
     mobile = models.BigIntegerField(null=False, blank=False, unique=True)
+    password = models.TextField(null=False)
     date_joined = models.DateTimeField(null=False, blank=False)
     date_modified = models.DateTimeField(null=True, blank=True)
     created_by_id = models.IntegerField(null=True)
@@ -20,6 +46,11 @@ class Customers(models.Model):
     is_active = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     logo_path = models.TextField(default='static/images/default/org_logo.png')
+    last_login = models.DateTimeField(null=True, blank=True)
+    is_logged_in = models.BooleanField(default=False)
+    token = models.TextField(null=True, blank=True)
+    token_expired = models.DateTimeField(null=True, blank=True)
+    is_password_updated = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'ChatBot'

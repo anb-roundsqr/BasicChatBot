@@ -1,4 +1,4 @@
-from rest_framework import views, response, exceptions, renderers, viewsets
+from rest_framework import views, response, exceptions, renderers, viewsets, decorators, authentication
 from datetime import datetime, timedelta
 from django.utils import timezone
 from ChatBot.functions import (
@@ -9,6 +9,7 @@ from ChatBot.functions import (
 from ChatBot.models import (
     BotConfiguration,
     Bots,
+    Admin,
     Customers,
     CustomerBots,
     Conversation
@@ -35,7 +36,7 @@ from ChatBot.serializers import (
 import json
 from geoip import geolite2
 from itertools import groupby
-from django.core.serializers.json import DjangoJSONEncoder
+# from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
 from django.http.request import QueryDict
@@ -46,6 +47,10 @@ from django.core.files.base import ContentFile
 import os
 from ChatBot.settings import STATICFILES_DIRS
 import time
+from random import randint, choice
+import string
+import base64
+import jwt
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -82,12 +87,17 @@ class CustomerViewSet(viewsets.ViewSet):
             requested_data = request.data
             print("requested_data", requested_data)
             requested_data = self.validate_requested_data(requested_data)
+            characters = string.ascii_letters + string.digits
+            password = "".join(
+                choice(characters) for x in range(randint(8, 16))
+            )
             serializer_context = {
                 'request': request,
             }
             requested_data.update({
                 "created_by_id": 1,  # auth_result["user"].id,
                 "date_joined": datetime.now(tz=timezone.utc),
+                "password": base64.b64encode(bytes(password.encode())).decode(),
             })
             customer_serializer = CustomerCreateSerializer(
                 data=requested_data,
@@ -1508,3 +1518,210 @@ class Analytics(views.APIView):
             print("exception")
             result.update(exception_handler(e))
         return result
+
+
+@decorators.api_view(['POST'])
+def register_admin(request):
+
+    result = {
+        "message": "admin already existed",
+        "status": "failed"
+    }
+    email_id = "raja@roundsqr.com"
+    mobile = 9959047000
+    admin_info = Admin.objects.filter(mobile=mobile, email_id=email_id)
+    if not admin_info:
+        characters = string.ascii_letters + string.digits
+        password = "".join(
+            choice(characters) for x in range(randint(8, 16))
+        )
+        admin_obj = Admin()
+        admin_obj.name = "Raja Devarakonda"
+        admin_obj.email_id = email_id
+        admin_obj.mobile = mobile
+        admin_obj.password = base64.b64encode(bytes(password.encode())).decode()
+        admin_obj.date_created = datetime.now(tz=timezone.utc)
+        admin_obj.save()
+        result.update({
+            "message": "admin registered successfully",
+            "status": "success"
+        })
+    return response.Response(result)
+
+
+class Login(views.APIView):
+
+    def post(self, request, *args, **kwargs):
+        result = {
+            "message": "Invalid credentials",
+            "status": "failed",
+            "response": {}
+        }
+        try:
+            username = request.data['mobile']
+            password = base64.b64encode(bytes(
+                request.data['password'].encode()
+            )).decode()
+            if kwargs["slug"] == "admin":
+                user_model = Admin
+                user_model_str = 'Admin'
+            else:
+                user_model = Customers
+                user_model_str = 'Customers'
+            user = user_model.objects.filter(
+                mobile=username,
+                password=password
+            )
+            if not user:
+                result.update({"message": "Invalid Credentials"})
+            else:
+                last_login = datetime.now(tz=timezone.utc)
+                payload = {
+                    'id': user[0].id,
+                    'mobile': user[0].mobile,
+                    'timestamp': datetime.timestamp(last_login),
+                    'user_model': user_model_str
+                }
+                jwt_token = {
+                    'token': jwt.encode(
+                        payload, "SECRET_KEY", algorithm='HS256'
+                    )
+                }
+                user[0].last_login = last_login
+                user[0].is_logged_in = True
+                user[0].token = jwt_token["token"].decode()
+                user[0].save()
+                result.update({
+                    "message": "successfully loggedIn",
+                    "status": "success",
+                })
+                result["response"].update({
+                    "token": jwt_token["token"],
+                    "is_pwd_updated": user[0].is_password_updated,
+                    "user_id": user[0].id,
+                    "user_name": user[0].name,
+                })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except Exception as e:
+            result.update(exception_handler(e))
+        return response.Response(result)
+
+
+class Logout(views.APIView):
+
+    def post(self, request, **kwargs):
+
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        if kwargs["slug"] == "admin":
+            user_model = Admin
+        else:
+            user_model = Customers
+        print('auth_result', auth_result["user"])
+        user_info = user_model.objects.filter(
+            id=auth_result["user"].id
+        ).update(token=None, is_logged_in=False)
+        print('user_info', user_info)
+        if user_info:
+            if "user_details_%s" % str(
+                    auth_result["user"].id
+            ) in request.session:
+                del request.session[
+                    "user_details_%s" % str(auth_result["user"].id)
+                ]
+            return response.Response(
+                {"message": "Successfully Logged Out"}
+            )
+        return response.Response({
+            "message": "Logout Failed"
+        })
+
+
+class TokenAuthentication(authentication.BaseAuthentication):
+
+    model = None
+
+    def get_model(self):
+        return Users
+
+    def authenticate(self, request):
+        auth = authentication.get_authorization_header(request).split()
+        print("auth", auth)
+        if not auth or auth[0].lower() != b'bearer':
+            return {"error": "Invalid Authorization"}
+        if len(auth) == 1:
+            msg = {'error': 'Invalid token header. No credentials provided.'}
+            raise exceptions.AuthenticationFailed(msg)
+        elif len(auth) > 2:
+            msg = {'error': 'Invalid token header'}
+            raise exceptions.AuthenticationFailed(msg)
+
+        try:
+            token = auth[1]
+            if token == "null":
+                msg = {'error': 'Null token not allowed'}
+                raise exceptions.AuthenticationFailed(msg)
+        except UnicodeError:
+            msg = {
+                'error': 'Invalid token header.'
+                         ' Token string should not'
+                         ' contain invalid characters.'
+            }
+            raise exceptions.AuthenticationFailed(msg)
+
+        return self.authenticate_credentials(token, request)
+
+    def authenticate_credentials(self, token, request):
+
+        # model = self.get_model()
+        msg = {'error': "Token mismatch", 'status': "401"}
+        jwt_sign = jwt.ExpiredSignature
+        jwt_token = jwt.InvalidTokenError
+        try:
+            payload = jwt.decode(token, "SECRET_KEY")
+            mobile = payload['mobile']
+            user_id = payload['id']
+            user_model = payload['user_model']
+            if user_model == "Admin":
+                user_model = Admin
+            else:
+                user_model = Customers
+            # if "user_details_%s" % str(
+            #         user_id
+            # ) not in request.session:
+            #     Users.objects.filter(
+            #         email_id=email,
+            #         id=user_id,
+            #     ).update(is_logged_in=False, token="")
+            #     return {"error": "Session expired."}
+            timestamp = payload['timestamp']
+            last_login = datetime.fromtimestamp(
+                timestamp,
+                tz=timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S")
+            user = user_model.objects.get(
+                mobile=mobile,
+                id=user_id,
+            )
+            if user.is_logged_in:
+                db_last_login = user.last_login.strftime("%Y-%m-%d %H:%M:%S")
+                if not user or last_login != db_last_login:
+                    raise exceptions.AuthenticationFailed(msg)
+                return {"user": user, "token": token}
+            else:
+                return {"error": "Please Login"}
+        except jwt_sign or jwt.DecodeError or jwt_token:
+            return {'error': "Token is invalid", "status": "403"}
+        except Admin.DoesNotExist or Customers.DoesNotExist:
+            return {'error': "Internal server error", "status": "500"}
+
+    def authenticate_header(self, request):
+        return 'Token'
