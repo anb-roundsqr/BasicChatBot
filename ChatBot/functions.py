@@ -11,6 +11,13 @@ from django.template.loader import get_template
 from datetime import datetime
 from django.utils import timezone
 from bson.objectid import ObjectId
+from .constants import (
+    EMAIL_HOST,
+    EMAIL_PORT,
+    EMAIL_HOST_USER,
+    EMAIL_HOST_PASSWORD,
+)
+from .models import EmailStatus
 
 
 def time_stamp_to_date_format(date_from_db):
@@ -204,7 +211,7 @@ def send_email(template_path, context, recipient, subject,
         message = MIMEMultipart()
         template = get_template(template_path)  # getting template
         html = template.render(context)  # render html
-        message["From"] = "information@firstmatch.org"
+        message["From"] = "powerbot@roundsqr.net"
         message["To"] = recipient
         message["Subject"] = subject
         if cc:

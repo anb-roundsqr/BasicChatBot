@@ -177,3 +177,24 @@ class BotConfiguration(models.Model):
     class Meta:
         app_label = 'ChatBot'
         db_table = '%s_client_questions' % app_label
+
+
+class EmailStatus(models.Model):
+
+    objects = models.Manager()
+
+    id = models.AutoField(primary_key=True)
+    template = models.TextField()
+    context = models.TextField()
+    recipient = models.TextField()
+    subject = models.TextField()
+    status = models.TextField()
+    created_by_id = models.IntegerField()
+    updated_by_id = models.IntegerField()
+    date_created = models.DateTimeField(null=False, blank=False)
+    date_modified = models.DateTimeField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = 'ChatBot'
+        db_table = '%s_email_status' % app_label
