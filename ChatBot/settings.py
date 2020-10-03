@@ -23,9 +23,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '$*v++%tgzssnj9_c#dcr_pla&x^v&u64gdili1iqqnx&7_l8y^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '3.19.204.159',
+    'chatbot.roundsqr.net'
+]
 
 
 # Application definition
