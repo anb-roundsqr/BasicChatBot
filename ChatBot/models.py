@@ -3,6 +3,31 @@ from model_utils import Choices
 from django.utils.translation import ugettext_lazy as _
 
 
+class Admin(models.Model):
+
+    objects = models.Manager()
+
+    name = models.CharField(max_length=100, null=False)
+    mobile = models.BigIntegerField(null=False)
+    email_id = models.EmailField(null=False)
+    password = models.TextField(null=False)
+    date_created = models.DateTimeField(null=False, blank=False)
+    date_modified = models.DateTimeField(null=True, blank=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+    is_logged_in = models.BooleanField(default=False)
+    token = models.TextField(null=True, blank=True)
+    token_expired = models.DateTimeField(null=True, blank=True)
+    is_password_updated = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = 'ChatBot'
+
+    @property
+    def full_name(self):
+        """Returns the person's full name."""
+        return '%s' % self.name
+
+
 class Customers(models.Model):
 
     objects = models.Manager
@@ -13,6 +38,7 @@ class Customers(models.Model):
     email_id = models.EmailField(
         max_length=200, null=False, blank=False, unique=True)
     mobile = models.BigIntegerField(null=False, blank=False, unique=True)
+    password = models.TextField(null=False)
     date_joined = models.DateTimeField(null=False, blank=False)
     date_modified = models.DateTimeField(null=True, blank=True)
     created_by_id = models.IntegerField(null=True)
@@ -20,6 +46,11 @@ class Customers(models.Model):
     is_active = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     logo_path = models.TextField(default='static/images/default/org_logo.png')
+    last_login = models.DateTimeField(null=True, blank=True)
+    is_logged_in = models.BooleanField(default=False)
+    token = models.TextField(null=True, blank=True)
+    token_expired = models.DateTimeField(null=True, blank=True)
+    is_password_updated = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'ChatBot'
@@ -65,16 +96,16 @@ class CustomerBots(models.Model):
         max_length=6,
         choices=BOT_TYPE
     )
-    header_colour = models.CharField(max_length=25, default='header_colour')
-    body_colour = models.CharField(max_length=25, default='body_colour')
-    font_type = models.CharField(max_length=25, default='font_type')
+    header_colour = models.CharField(max_length=25, default='#000000')
+    body_colour = models.CharField(max_length=25, default='#FFFFFFF')
+    font_type = models.CharField(max_length=25, default='Arial, Helvitica')
     bot_logo = models.TextField(default='static/images/default/bot_logo.png')
-    chat_logo = models.TextField(default='static/images/default/chat_logo.png')
-    user_logo = models.TextField(default='static/images/default/user_logo.png')
-    bot_bubble_colour = models.CharField(max_length=25, default='bot_bubble_colour')
-    user_bubble_colour = models.CharField(max_length=25, default='user_bubble_colour')
-    chat_bot_font_colour = models.CharField(max_length=25, default='chat_bot_font_colour')
-    chat_user_font_colour = models.CharField(max_length=25, default='chat_user_font_colour')
+    chat_logo = models.TextField(default='static/images/default/chat.png')
+    user_logo = models.TextField(default='static/images/default/user_logo.jpg')
+    bot_bubble_colour = models.CharField(max_length=25, default='#C0C0C0')
+    user_bubble_colour = models.CharField(max_length=25, default='#606060')
+    chat_bot_font_colour = models.CharField(max_length=25, default='#000000')
+    chat_user_font_colour = models.CharField(max_length=25, default='#FFFFFF')
     date_created = models.DateTimeField(null=False, blank=False)
     date_modified = models.DateTimeField(null=True, blank=True)
     created_by_id = models.IntegerField(null=True)
@@ -113,10 +144,11 @@ class BotConfiguration(models.Model):
     objects = models.Manager
 
     id = models.AutoField(primary_key=True)
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
     question = models.TextField(max_length=250)
     description = models.TextField(max_length=500, null=True)
-    question_id = models.IntegerField()
+    question_id = models.IntegerField()  # UI Purpose
     ANSWER_TYPE = Choices(
         ('TEXT', 'text', _('TEXT')),
         ('NUMBER', 'number', _('NUMBER')),
@@ -139,7 +171,30 @@ class BotConfiguration(models.Model):
     is_deleted = models.BooleanField(default=False)
     required = models.CharField(max_length=4, default="no")
     related = models.BooleanField(default=False)
+    is_last_question = models.BooleanField(default=False)
+    is_lead_gen_question = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'ChatBot'
         db_table = '%s_client_questions' % app_label
+
+
+class EmailStatus(models.Model):
+
+    objects = models.Manager()
+
+    id = models.AutoField(primary_key=True)
+    template = models.TextField()
+    context = models.TextField()
+    recipient = models.TextField()
+    subject = models.TextField()
+    status = models.TextField()
+    created_by_id = models.IntegerField()
+    updated_by_id = models.IntegerField()
+    date_created = models.DateTimeField(null=False, blank=False)
+    date_modified = models.DateTimeField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = 'ChatBot'
+        db_table = '%s_email_status' % app_label

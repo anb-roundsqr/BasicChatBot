@@ -2,26 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="51497414-b528-4c07-a16c-fe6b653288bd" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0002_auto_20200811_1657.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0003_botquestions_related.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0004_auto_20200817_1550.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0005_auto_20200824_0123.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0006_auto_20200825_0259.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0007_auto_20200826_0059.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0008_auto_20200826_0105.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0009_auto_20200826_0111.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0010_auto_20200826_0114.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0011_auto_20200826_0115.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0012_auto_20200826_0118.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0013_conversation_chat_source_longitude.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/migrations/0014_auto_20200826_0136.py" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/test_log.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/functions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ChatBot/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ChatBot/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ChatBot/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ChatBot/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ChatBot/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/ChatBot/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,8 +39,9 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/ChatBot" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../Master/BasicChatBot" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="two.files.diff.last.used.folder" value="$PROJECT_DIR$/../../Master/BasicChatBot" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -74,10 +62,14 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
-    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog" timestamp="1598971622796">
+    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog" timestamp="1601751729044">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog/0.0.1366.728@0.0.1366.728" timestamp="1598971622796" />
+    <state x="92" y="92" width="1182" height="544" key="DiffContextDialog/0.0.1366.728@0.0.1366.728" timestamp="1601751729044" />
+    <state x="463" y="119" key="FileChooserDialogImpl" timestamp="1601751240772">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state x="463" y="119" key="FileChooserDialogImpl/0.0.1366.728@0.0.1366.728" timestamp="1601751240772" />
     <state x="129" y="55" key="MergeDialog" timestamp="1598971103566">
       <screen x="0" y="0" width="1366" height="728" />
     </state>

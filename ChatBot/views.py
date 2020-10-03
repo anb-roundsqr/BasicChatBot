@@ -1,4 +1,4 @@
-from rest_framework import views, response, exceptions, renderers, viewsets
+from rest_framework import views, response, exceptions, renderers, viewsets, decorators, authentication
 from datetime import datetime, timedelta
 from django.utils import timezone
 from ChatBot.functions import (
@@ -9,6 +9,7 @@ from ChatBot.functions import (
 from ChatBot.models import (
     BotConfiguration,
     Bots,
+    Admin,
     Customers,
     CustomerBots,
     Conversation
@@ -35,12 +36,21 @@ from ChatBot.serializers import (
 import json
 from geoip import geolite2
 from itertools import groupby
-from django.core.serializers.json import DjangoJSONEncoder
+# from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
 from django.http.request import QueryDict
 from django.shortcuts import get_object_or_404
 import re
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
+from ChatBot.settings import STATICFILES_DIRS
+import time
+from random import randint, choice
+import string
+import base64
+import jwt
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -77,12 +87,17 @@ class CustomerViewSet(viewsets.ViewSet):
             requested_data = request.data
             print("requested_data", requested_data)
             requested_data = self.validate_requested_data(requested_data)
+            characters = string.ascii_letters + string.digits
+            password = "".join(
+                choice(characters) for x in range(randint(8, 16))
+            )
             serializer_context = {
                 'request': request,
             }
             requested_data.update({
                 "created_by_id": 1,  # auth_result["user"].id,
                 "date_joined": datetime.now(tz=timezone.utc),
+                "password": base64.b64encode(bytes(password.encode())).decode(),
             })
             customer_serializer = CustomerCreateSerializer(
                 data=requested_data,
@@ -586,6 +601,43 @@ class CustomerBotViewSet(viewsets.ViewSet):
         return requested_data
 
 
+class BotProperties(views.APIView):
+
+    def get(self, request):
+
+        result = {
+            "message": "source_url must be required",
+            "status": "failed"
+        }
+        try:
+            if request.query_params["source_url"]:
+                queryset = CustomerBots.objects.all()
+                bot = get_object_or_404(queryset, source_url=request.query_params["source_url"])
+                serializer_context = {
+                    'request': request,
+                }
+                serializer = CustomerBotRetrieveSerializer(
+                    bot, context=serializer_context)
+                bot_details = json.loads(renderers.JSONRenderer().render(
+                    serializer.data).decode())
+                result.update({
+                    "message": "bot ui properties",
+                    "status": "success",
+                    "response": bot_details
+                })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
+        print("result", result)
+        return response.Response(result)
+
+
 class ClientConfiguration(views.APIView):
 
     def get(self, request):
@@ -596,15 +648,20 @@ class ClientConfiguration(views.APIView):
         :return:
         """
         result = {
-            "message": "bot must be non empty",
+            "message": "customer must be non empty",
             "response": "",
             "status": "failed"
         }
         try:
-            if request.query_params["bot"] != "":
-                result.update(
-                    self.retrieve_sections(request.query_params["bot"])
-                )
+            if request.query_params["customer"] != "":
+                result["message"] = "customer must be non empty"
+                if request.query_params["bot"] != "":
+                    result.update(
+                        self.retrieve_sections(
+                            request.query_params["customer"],
+                            request.query_params["bot"]
+                        )
+                    )
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -621,20 +678,22 @@ class ClientConfiguration(views.APIView):
         :return:
         """
         result = {
-            "message": "bot must be non empty",
+            "message": "customer must be non empty",
             "response": "",
             "status": "failed"
         }
         try:
-            if request.data["bot"] != "":
-                result["message"], questions = self.validate_questions(
-                    request.data["questions"]
-                )
-                if result["message"] == "":
-                    result = self.create_or_update_sections(
-                        request.data["bot"],
-                        questions,
+            if request.data["customer"] != "":
+                if request.data["bot"] != "":
+                    result["message"], questions = self.validate_questions(
+                        request.data["questions"]
                     )
+                    if result["message"] == "":
+                        result = self.create_or_update_sections(
+                            request.data["customer"],
+                            request.data["bot"],
+                            questions,
+                        )
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -643,9 +702,10 @@ class ClientConfiguration(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def create_or_update_sections(self, bot, questions):
+    def create_or_update_sections(self, customer, bot, questions):
 
         """
+        :param customer:
         :param questions:
         :param bot
         :return result:
@@ -658,56 +718,66 @@ class ClientConfiguration(views.APIView):
             "message": ""
         }
         try:
-            bot_info = Bots.objects.filter(id=bot)
-            result["message"] = "invalid bot"
-            if bot_info:
-                sections_info = BotConfiguration.objects.filter(
-                    bot=bot_info[0]
-                )
-                if sections_info:
-                    BotConfiguration.objects.filter(
+            customer_info = Customers.objects.filter(id=customer)
+            result["message"] = "invalid customer"
+            if customer_info:
+                bot_info = Bots.objects.filter(id=bot)
+                result["message"] = "invalid bot"
+                if bot_info:
+                    sections_info = BotConfiguration.objects.filter(
+                        customer=customer_info[0],
                         bot=bot_info[0]
-                    ).delete()
-                for question in questions:
-                    question_obj = BotConfiguration()
-                    question_obj.bot = bot_info[0]
-                    question_obj.question = question["question"]
-                    if "description" in question:
-                        question_obj.description = question["description"]
-                    question_obj.question_id = question["question_id"]
-                    question_obj.answer_type = question[
-                        "answer_type"
-                    ].upper()
-                    if question['answer_type'].lower() in [
-                        'select',
-                        'checkbox',
-                        'radio'
-                    ]:
-                        question_obj.suggested_answers = question[
-                            "suggested_answers"
-                        ]
-                    if "suggested_jump" in question:
-                        question_obj.suggested_jump = question[
-                            "suggested_jump"
-                        ]
-                    if question["answer_type"].lower() in [
-                        'text',
-                        'number'
-                    ]:
-                        question_obj.validation1 = question["validation1"]
-                        question_obj.validation2 = question["validation2"]
-                        question_obj.error_msg = question["error_msg"]
-                    question_obj.required = question["required"]
-                    question_obj.related = question["related"]
-                    # question_obj.created_by_id = auth_result["user"].id
-                    question_obj.date_created = datetime.now(
-                        tz=timezone.utc
                     )
-                    question_obj.save()
-                result.update({
-                    "message": "bot configuration done",
-                    "status": "success"
-                })
+                    if sections_info:
+                        BotConfiguration.objects.filter(
+                            customer=customer_info[0],
+                            bot=bot_info[0]
+                        ).delete()
+                    for question in questions:
+                        question_obj = BotConfiguration()
+                        question_obj.customer = customer_info[0]
+                        question_obj.bot = bot_info[0]
+                        question_obj.question = question["question"]
+                        if "description" in question:
+                            question_obj.description = question["description"]
+                        question_obj.question_id = question["question_id"]
+                        question_obj.answer_type = question[
+                            "answer_type"
+                        ].upper()
+                        if question['answer_type'].lower() in [
+                            'select',
+                            'checkbox',
+                            'radio'
+                        ]:
+                            question_obj.suggested_answers = question[
+                                "suggested_answers"
+                            ]
+                        if "suggested_jump" in question:
+                            question_obj.suggested_jump = question[
+                                "suggested_jump"
+                            ]
+                        if question["answer_type"].lower() in [
+                            'text',
+                            'number'
+                        ]:
+                            question_obj.validation1 = question["validation1"]
+                            question_obj.validation2 = question["validation2"]
+                            question_obj.error_msg = question["error_msg"]
+                        question_obj.required = question["required"]
+                        question_obj.related = question["related"]
+                        # question_obj.created_by_id = auth_result["user"].id
+                        question_obj.date_created = datetime.now(
+                            tz=timezone.utc
+                        )
+                        if "is_last_question" in question:
+                            question_obj.is_last_question = question["is_last_question"]
+                        if "is_lead_gen_question" in question:
+                            question_obj.is_lead_gen_question = question["is_lead_gen_question"]
+                        question_obj.save()
+                    result.update({
+                        "message": "bot configuration done",
+                        "status": "success"
+                    })
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
         except Exception as e:
@@ -715,7 +785,7 @@ class ClientConfiguration(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def retrieve_sections(self, bot):
+    def retrieve_sections(self, customer, bot):
 
         result = {
             "status": "failed",
@@ -726,6 +796,7 @@ class ClientConfiguration(views.APIView):
                 renderers.JSONRenderer().render(
                     ClientQuestionSerializer(
                         BotConfiguration.objects.filter(
+                            customer_id=customer,
                             bot_id=bot
                         ), many=True
                     ).data
@@ -882,6 +953,17 @@ class ClientConfiguration(views.APIView):
                             else:
                                 question["related"] = False
                             print('related', question['related'])
+                        if "is_last_question" in question:
+                            if question["is_last_question"] == "true":
+                                question["is_last_question"] = True
+                            else:
+                                question["is_last_question"] = False
+                        if "is_lead_gen_question" in question:
+                            if question["is_lead_gen_question"] == "true":
+                                question["is_lead_gen_question"] = True
+                            else:
+                                question["is_lead_gen_question"] = False
+
                         if question['answer_type'].lower() in [
                             'select',
                             'checkbox',
@@ -932,9 +1014,10 @@ class ClientForm(views.APIView):
             "response": ""
         }
         try:
-            bot_id = bot_info["bot_id"]
-            bot = Bots.objects.get(id=bot_id)  # bot_id will changed to source_url
-            result = ClientConfiguration().retrieve_sections(bot_id)
+            # bot_id = bot_info["bot_id"]
+            source_url = bot_info["location"]
+            customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
+            result = ClientConfiguration().retrieve_sections(customer_bot.customer_id, customer_bot.bot_id)
             if result["status"] == "success":
                 questions = result["response"]
                 result["response"] = ""
@@ -1025,10 +1108,10 @@ class ClientForm(views.APIView):
                                         'question'
                                     ] == next_question
                                 ][0]
-                    print('bot', bot)
+                    print('bot', customer_bot.bot)
                     con_obj = Conversation()
-                    con_obj.bot = bot
-                    con_obj.customer = bot.customer
+                    con_obj.bot = customer_bot.bot
+                    con_obj.customer = customer_bot.customer
                     con_obj.text = bot_info["text"]
                     con_obj.ip_address = bot_info["ip"]
                     con_obj.session_id = bot_info["sessionId"]
@@ -1060,8 +1143,8 @@ class ClientForm(views.APIView):
                     "response": required_next_question
                 }
                 con_obj = Conversation()
-                con_obj.bot = bot
-                con_obj.customer = bot.customer
+                con_obj.bot = customer_bot.bot
+                con_obj.customer = customer_bot.customer
                 con_obj.text = required_next_question["question"]
                 con_obj.ip_address = bot_info["ip"]
                 con_obj.session_id = bot_info["sessionId"]
@@ -1091,8 +1174,8 @@ class ClientForm(views.APIView):
             message = "bot_info must be dict"
             if isinstance(bot_obj, dict):
                 message = ""
-                if "bot_id" not in bot_obj:
-                    message = "bot_id missing in 'bot_info'"
+                # if "bot_id" not in bot_obj:
+                #     message = "bot_id missing in 'bot_info'"
                 if "question" in bot_obj:
                     if 'text' not in bot_obj:
                         message = "text missing in 'bot_info'"
@@ -1100,6 +1183,9 @@ class ClientForm(views.APIView):
                     message = "ip missing in 'bot_info'"
                 if "sessionId" not in bot_obj:
                     message = "sessionId missing in 'bot_info'"
+                if "location" not in bot_obj:
+                    message = "location missing in 'bot_info'"
+
         return message, bot_obj
 
 
@@ -1275,3 +1361,367 @@ def unique_and_count(lst):
     """Return a list of unique dicts with a 'count' key added"""
     grouper = groupby(sorted(map(canonicalize_dict, lst)))
     return [dict(k + [("value", len(list(g)))]) for k, g in grouper]
+
+
+class AssetsUploader(views.APIView):
+
+    def post(self, request, **kwargs):
+        # token_auth = TokenAuthentication()
+        # auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "resource not found",
+            "status": "failed"
+        }
+        try:
+            if kwargs["slug"] in ['image', 'file']:
+                if request.FILES["asset"]:
+                    return self.assets_upload_processor(
+                        kwargs["slug"],
+                        request.FILES["asset"]
+                    )
+                else:
+                    result["message"] = "please upload an asset"
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        return response.Response(result)
+
+    def assets_upload_processor(self, asset_type, asset):
+
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            fileName = asset.name
+            fileType = fileName.split('.')[-1]
+            ASSET_DIR = ""
+            if asset_type == "image":
+                result["message"] = "only 'png', 'jpg', 'jpeg' files are allowed."
+                if fileType in ("png", "jpg", "jpeg"):
+                    ASSET_DIR = os.path.join(
+                        STATICFILES_DIRS[0],
+                        'images',
+                        'logos'
+                    )
+
+            elif asset_type == 'file':
+                result["message"] = "only 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
+                if fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
+                    ASSET_DIR = os.path.join(
+                        STATICFILES_DIRS[0],
+                        'documents'
+                    )
+            if ASSET_DIR:
+                if not os.path.exists(ASSET_DIR):
+                    os.makedirs(ASSET_DIR)
+                filePath = os.path.join(
+                    ASSET_DIR,
+                    str(int(time.time())) + "_" + fileName
+                )
+                filePath = filePath.replace(" ", '_')
+                default_storage.save(
+                    "%s" % filePath,
+                    ContentFile(asset.read())
+                )  # to default storage file path address
+                path = 'static%s' % str(filePath.split('static')[1])
+                result.update({
+                    "message": "asset uploaded successfully",
+                    "status": "success",
+                    "response": path
+                })
+        except Exception as e:
+            result.update(exception_handler(e))
+        return response.Response(result)
+
+
+class Analytics(views.APIView):
+
+    def get(self, request, **kwargs):
+
+        result = {
+            "message": "Value required for 'days_count' field.",
+            "status": "failed"
+        }
+        try:
+            days_count = 30
+            if "days_count" in request.query_params:
+                days_count = int(request.query_params["days_count"])
+            result.update(self.process_metrics(days_count, kwargs["slug"]))
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except ValueError:
+            result["message"] = "'days_count' must be integer."
+        print("result", result)
+        return response.Response(result)
+
+    def process_metrics(self, days_count, grpah_type):
+
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            current_date = datetime.now(tz=timezone.utc)
+            start_date = current_date - timedelta(days=days_count)
+            print('current_date', current_date.date())
+            print('start_date', start_date.date())
+            actual_dates = []
+            for i in range(days_count):
+                actual_dates.append(
+                    datetime.strftime(
+                        start_date + timedelta(days=i),
+                        "%Y-%m-%d"
+                    )
+                )
+            print('actual_dates', actual_dates)
+            sessions = Conversation.objects.filter(
+                time_stamp__date__gte=start_date.date(),
+                time_stamp__date__lt=current_date.date()
+            ).values('time_stamp')
+            sessions = json.loads(dumps(sessions))
+            print('sessions', sessions)
+            result["message"] = "no graph data"
+            if sessions:
+                for session in sessions:
+                    session["name"] = time_stamp_to_date_format(
+                        session["time_stamp"]["$date"]
+                    ).split()[0]
+                    del session["time_stamp"]
+                graph_data = unique_and_count(sessions)
+                existed_dates = [record["name"] for record in graph_data]
+                print('existed_dates', existed_dates)
+                for ac_date in actual_dates:
+                    if ac_date not in existed_dates:
+                        graph_data.append({
+                            "name": ac_date,
+                            "value": 0
+                        })
+                graph_data.sort(key=lambda x: x['name'])
+                result.update({
+                    "message": "graph data",
+                    "status": "success",
+                    "response": graph_data
+                })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            print("exception")
+            result.update(exception_handler(e))
+        return result
+
+
+@decorators.api_view(['POST'])
+def register_admin(request):
+
+    result = {
+        "message": "admin already existed",
+        "status": "failed"
+    }
+    email_id = "raja@roundsqr.com"
+    mobile = 9959047000
+    admin_info = Admin.objects.filter(mobile=mobile, email_id=email_id)
+    if not admin_info:
+        characters = string.ascii_letters + string.digits
+        password = "".join(
+            choice(characters) for x in range(randint(8, 16))
+        )
+        admin_obj = Admin()
+        admin_obj.name = "Raja Devarakonda"
+        admin_obj.email_id = email_id
+        admin_obj.mobile = mobile
+        admin_obj.password = base64.b64encode(bytes(password.encode())).decode()
+        admin_obj.date_created = datetime.now(tz=timezone.utc)
+        admin_obj.save()
+        result.update({
+            "message": "admin registered successfully",
+            "status": "success"
+        })
+    return response.Response(result)
+
+
+class Login(views.APIView):
+
+    def post(self, request, *args, **kwargs):
+        result = {
+            "message": "Invalid credentials",
+            "status": "failed",
+            "response": {}
+        }
+        try:
+            username = request.data['mobile']
+            password = base64.b64encode(bytes(
+                request.data['password'].encode()
+            )).decode()
+            if kwargs["slug"] == "admin":
+                user_model = Admin
+                user_model_str = 'Admin'
+            else:
+                user_model = Customers
+                user_model_str = 'Customers'
+            user = user_model.objects.filter(
+                mobile=username,
+                password=password
+            )
+            if not user:
+                result.update({"message": "Invalid Credentials"})
+            else:
+                last_login = datetime.now(tz=timezone.utc)
+                payload = {
+                    'id': user[0].id,
+                    'mobile': user[0].mobile,
+                    'timestamp': datetime.timestamp(last_login),
+                    'user_model': user_model_str
+                }
+                jwt_token = {
+                    'token': jwt.encode(
+                        payload, "SECRET_KEY", algorithm='HS256'
+                    )
+                }
+                user[0].last_login = last_login
+                user[0].is_logged_in = True
+                user[0].token = jwt_token["token"].decode()
+                user[0].save()
+                result.update({
+                    "message": "successfully loggedIn",
+                    "status": "success",
+                })
+                result["response"].update({
+                    "token": jwt_token["token"],
+                    "is_pwd_updated": user[0].is_password_updated,
+                    "user_id": user[0].id,
+                    "user_name": user[0].name,
+                })
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except Exception as e:
+            result.update(exception_handler(e))
+        return response.Response(result)
+
+
+class Logout(views.APIView):
+
+    def post(self, request, **kwargs):
+
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        if kwargs["slug"] == "admin":
+            user_model = Admin
+        else:
+            user_model = Customers
+        print('auth_result', auth_result["user"])
+        user_info = user_model.objects.filter(
+            id=auth_result["user"].id
+        ).update(token=None, is_logged_in=False)
+        print('user_info', user_info)
+        if user_info:
+            if "user_details_%s" % str(
+                    auth_result["user"].id
+            ) in request.session:
+                del request.session[
+                    "user_details_%s" % str(auth_result["user"].id)
+                ]
+            return response.Response(
+                {"message": "Successfully Logged Out"}
+            )
+        return response.Response({
+            "message": "Logout Failed"
+        })
+
+
+class TokenAuthentication(authentication.BaseAuthentication):
+
+    model = None
+
+    def get_model(self):
+        return Users
+
+    def authenticate(self, request):
+        auth = authentication.get_authorization_header(request).split()
+        print("auth", auth)
+        if not auth or auth[0].lower() != b'bearer':
+            return {"error": "Invalid Authorization"}
+        if len(auth) == 1:
+            msg = {'error': 'Invalid token header. No credentials provided.'}
+            raise exceptions.AuthenticationFailed(msg)
+        elif len(auth) > 2:
+            msg = {'error': 'Invalid token header'}
+            raise exceptions.AuthenticationFailed(msg)
+
+        try:
+            token = auth[1]
+            if token == "null":
+                msg = {'error': 'Null token not allowed'}
+                raise exceptions.AuthenticationFailed(msg)
+        except UnicodeError:
+            msg = {
+                'error': 'Invalid token header.'
+                         ' Token string should not'
+                         ' contain invalid characters.'
+            }
+            raise exceptions.AuthenticationFailed(msg)
+
+        return self.authenticate_credentials(token, request)
+
+    def authenticate_credentials(self, token, request):
+
+        # model = self.get_model()
+        msg = {'error': "Token mismatch", 'status': "401"}
+        jwt_sign = jwt.ExpiredSignature
+        jwt_token = jwt.InvalidTokenError
+        try:
+            payload = jwt.decode(token, "SECRET_KEY")
+            mobile = payload['mobile']
+            user_id = payload['id']
+            user_model = payload['user_model']
+            if user_model == "Admin":
+                user_model = Admin
+            else:
+                user_model = Customers
+            # if "user_details_%s" % str(
+            #         user_id
+            # ) not in request.session:
+            #     Users.objects.filter(
+            #         email_id=email,
+            #         id=user_id,
+            #     ).update(is_logged_in=False, token="")
+            #     return {"error": "Session expired."}
+            timestamp = payload['timestamp']
+            last_login = datetime.fromtimestamp(
+                timestamp,
+                tz=timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S")
+            user = user_model.objects.get(
+                mobile=mobile,
+                id=user_id,
+            )
+            if user.is_logged_in:
+                db_last_login = user.last_login.strftime("%Y-%m-%d %H:%M:%S")
+                if not user or last_login != db_last_login:
+                    raise exceptions.AuthenticationFailed(msg)
+                return {"user": user, "token": token}
+            else:
+                return {"error": "Please Login"}
+        except jwt_sign or jwt.DecodeError or jwt_token:
+            return {'error': "Token is invalid", "status": "403"}
+        except Admin.DoesNotExist or Customers.DoesNotExist:
+            return {'error': "Internal server error", "status": "500"}
+
+    def authenticate_header(self, request):
+        return 'Token'
