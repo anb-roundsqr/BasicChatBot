@@ -29,7 +29,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '3.19.204.159',
-    'chatbot.roundsqr.net'
+    'api.chatbot.roundsqr.net'
 ]
 
 
