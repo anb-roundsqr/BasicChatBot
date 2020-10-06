@@ -23,9 +23,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '$*v++%tgzssnj9_c#dcr_pla&x^v&u64gdili1iqqnx&7_l8y^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '3.19.204.159',
+    'api.chatbot.roundsqr.net'
+]
 
 
 # Application definition
@@ -113,8 +118,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
-
 CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = (
+    'https://api.chatbot.roundsqr.net',
+    'https://app.chatbot.roundsqr.net',
+    'http://localhost:3000',
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
