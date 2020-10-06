@@ -196,7 +196,7 @@ p {
     margin: 10px 10px;
 }
 .outgoing-chats-msg p{
-    background: #FF081A none repeat scroll 0 0;
+    /* background: #FF081A none repeat scroll 0 0; */
     border-radius: 10px;
     color: #fff;
     font-size: 14px;
