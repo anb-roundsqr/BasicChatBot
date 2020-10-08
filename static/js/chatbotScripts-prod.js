@@ -2,10 +2,11 @@
 function onLoad() {
     var location_Url = window.location.href;
     funCss(location_Url);
+    
 }
 
 async function funCss(location_Url) {
-    var Url = "http://18.221.57.172/bot-properties?source_url=";
+    var Url = "https://api.chatbot.roundsqr.net/bot-properties?source_url=";
     var params = location_Url;
     
     try {
@@ -45,7 +46,7 @@ function funChatbox(text_msgs, ques_msg, response) {
     }
     var ip;
 
-    var Url = "http://18.221.57.172/client-form";
+    var Url = "https://api.chatbot.roundsqr.net/client-form";
     var xhr = new XMLHttpRequest();
     console.log( window.location.href)
     xhr.open('POST', Url, true);
@@ -88,7 +89,7 @@ function showResponse(ajaxResponse, response) {
     // headerContainer.style.backgroundColor = '#ccffff';
     var newIcon = document.createElement('div');
     newIcon.className = ('chats-logo');
-    var botLogo = "http://18.221.57.172/"+css.bot_logo;
+    var botLogo = "https://api.chatbot.roundsqr.net/"+css.bot_logo;
     console.log(botLogo)
     newIcon.innerHTML = ('<img src= '+botLogo+'>');
     // newIcon.appendChild(newIcon);
@@ -107,7 +108,7 @@ function showResponse(ajaxResponse, response) {
 
     var newItem1 = document.createElement('div');
     newItem1.className = ('received-chats-img');
-    var botImg = "http://18.221.57.172/"+css.bot_logo;
+    var botImg = "https://api.chatbot.roundsqr.net/"+css.bot_logo;
     console.log(botImg)
     newItem1.innerHTML = ('<img src= '+botImg+'>');
     newItem.appendChild(newItem1);
@@ -163,7 +164,7 @@ function showResponse(ajaxResponse, response) {
 
             var newItem_oc2 = document.createElement('div');
             newItem_oc2.className = ('outgoing-chats-img');
-            var userImg = "http://18.221.57.172/"+css.user_logo;
+            var userImg = "https://api.chatbot.roundsqr.net/"+css.user_logo;
             newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
             newItem_oc.appendChild(newItem_oc2);
 
@@ -220,7 +221,7 @@ async function SaveFile(res)
     formData.append("asset", file);  
     
     try {
-       let r = await fetch('http://18.221.57.172/assets/file', {method: "POST", body: formData})
+       let r = await fetch('https://api.chatbot.roundsqr.net/assets/file', {method: "POST", body: formData})
        .then(response => response.text())
         .then(data => 
             response = JSON.parse(data));
@@ -237,7 +238,7 @@ async function SaveFile(res)
 }
 
 async function funFileMsg(textmsg, filePath) {
-    var Url = "http://18.221.57.172/bot-properties?source_url=";
+    var Url = "https://api.chatbot.roundsqr.net/bot-properties?source_url=";
     var params = window.location.href;
     var css;
     
@@ -280,7 +281,7 @@ async function funFileMsg(textmsg, filePath) {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "http://18.221.57.172/"+css.user_logo;
+        var userImg = "https://api.chatbot.roundsqr.net/"+css.user_logo;
         newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
@@ -305,7 +306,7 @@ function doit_onkeypress(event) {
 }
 
 async function funTextMsg() {
-    var Url = "http://18.221.57.172/bot-properties?source_url=";
+    var Url = "https://api.chatbot.roundsqr.net/bot-properties?source_url=";
     var params = window.location.href;
     var css;
     
@@ -352,7 +353,7 @@ async function funTextMsg() {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img'); 
-        var userImg = "http://18.221.57.172/"+css.user_logo;
+        var userImg = "https://api.chatbot.roundsqr.net/"+css.user_logo;
         newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
