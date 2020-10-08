@@ -52,6 +52,7 @@ from random import randint, choice
 import string
 import base64
 import jwt
+import uuid
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -1040,6 +1041,7 @@ class ClientForm(views.APIView):
             "response": ""
         }
         try:
+
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
             customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
@@ -1199,6 +1201,13 @@ class ClientForm(views.APIView):
                         con_obj.longitude = match.location[1]
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
+                else:
+                    session_id = str(uuid.uuid4)
+                    print('session_id', session_id)
+                    # request.session[
+                    #     "user_details_%s" % str(user.id)
+                    # ] = str(result["response"])
+                    # request.session.set_expiry(86400)
                 # print('questions', questions)
                 suggested_answers = [{
                     "payload": sug_ans,
