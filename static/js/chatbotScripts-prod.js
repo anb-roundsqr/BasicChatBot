@@ -2,7 +2,7 @@
 function onLoad() {
     var location_Url = window.location.href;
     funCss(location_Url);
-
+    
 }
 
 async function funCss(location_Url) {
@@ -24,7 +24,7 @@ async function funCss(location_Url) {
             }
         }
     } catch(e) {
-       console.log('Abhee we have problem...:', e);
+       console.log('Powerbot we have problem...:', e);
     }
 }
 
@@ -45,10 +45,6 @@ function funChatbox(text_msgs, ques_msg, response) {
         question = ques_msg;
     }
     var ip;
-    // $.getJSON("https://api.ipify.org?format=json", 
-    // function(data) { 
-    //     ip = data.ip;
-    // }) 
 
     var Url = "https://api.chatbot.roundsqr.net/client-form";
     var xhr = new XMLHttpRequest();
@@ -74,11 +70,31 @@ function funChatbox(text_msgs, ques_msg, response) {
     }
 }
 
+
+
 function showResponse(ajaxResponse, response) {
     console.log(response);
     var seconds = new Date().getTime() / 1000;
     console.log(seconds)
     var css = response.response;
+    console.log(css.header_colour)
+    var headerBlock = document.getElementById('mydiv');
+    headerBlock.style.background = css.header_colour;
+
+    var headerText = document.getElementsByTagName("h4");
+    headerText[0].style.color = css.header_colour;
+    headerText[0].innerHTML = "Chat with us now!";
+
+    var headerContainer = document.querySelector('#icon');
+    // headerContainer.style.backgroundColor = '#ccffff';
+    var newIcon = document.createElement('div');
+    newIcon.className = ('chats-logo');
+    var botLogo = "https://api.chatbot.roundsqr.net/"+css.bot_logo;
+    console.log(botLogo)
+    newIcon.innerHTML = ('<img src= '+botLogo+'>');
+    // newIcon.appendChild(newIcon);
+    headerContainer.appendChild(newIcon)
+
     var responseContainer = document.querySelector('#responseContainer');
     //body background colour
     responseContainer.style.backgroundColor = css.body_color;
@@ -178,6 +194,7 @@ function showResponse(ajaxResponse, response) {
 
     if (ajaxResponse[0].answer_type == 'TEXT') {
         document.getElementById("bolForm").style.display = "block";
+        document.getElementsByClassName("msg-bottom")[0].style.backgroundColor = css.header_colour;
     } else {
         document.getElementById("bolForm").style.display = "none";
     }
@@ -215,7 +232,7 @@ async function SaveFile(res)
             funFileMsg(textmsg, filePath);
         }
     } catch(e) {
-       console.log('Abhee we have problem...:', e);
+       console.log('Powerbot we have problem...:', e);
     }
     
 }
@@ -305,11 +322,12 @@ async function funTextMsg() {
             console.log(response)
         }
     } catch(e) {
-       console.log('Abhee we have problem...:', e);
+       console.log('Powerbot we have problem...:', e);
     }
 
     if (document.getElementById("txtmsgid").value != '') {
         textmsg = document.getElementById("txtmsgid").value;
+        console.log(css)
 
         console.log(document.getElementById("resquestion").innerHTML);
         var responseContainer = document.querySelector('#responseContainer');

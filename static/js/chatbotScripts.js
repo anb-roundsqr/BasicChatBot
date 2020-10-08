@@ -2,11 +2,10 @@
 function onLoad() {
     var location_Url = window.location.href;
     funCss(location_Url);
-
 }
 
 async function funCss(location_Url) {
-    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var Url = "http://18.221.57.172/bot-properties?source_url=";
     var params = location_Url;
     
     try {
@@ -24,7 +23,7 @@ async function funCss(location_Url) {
             }
         }
     } catch(e) {
-       console.log('Abhee we have problem...:', e);
+       console.log('Powerbot we have problem...:', e);
     }
 }
 
@@ -45,12 +44,8 @@ function funChatbox(text_msgs, ques_msg, response) {
         question = ques_msg;
     }
     var ip;
-    // $.getJSON("https://api.ipify.org?format=json", 
-    // function(data) { 
-    //     ip = data.ip;
-    // }) 
 
-    var Url = "https://18.221.57.172/client-form";
+    var Url = "http://18.221.57.172/client-form";
     var xhr = new XMLHttpRequest();
     console.log( window.location.href)
     xhr.open('POST', Url, true);
@@ -74,11 +69,31 @@ function funChatbox(text_msgs, ques_msg, response) {
     }
 }
 
+
+
 function showResponse(ajaxResponse, response) {
     console.log(response);
     var seconds = new Date().getTime() / 1000;
     console.log(seconds)
     var css = response.response;
+    console.log(css.header_colour)
+    var headerBlock = document.getElementById('mydiv');
+    headerBlock.style.background = css.header_colour;
+
+    var headerText = document.getElementsByTagName("h4");
+    headerText[0].style.color = css.header_colour;
+    headerText[0].innerHTML = "Chat with us now!";
+
+    var headerContainer = document.querySelector('#icon');
+    // headerContainer.style.backgroundColor = '#ccffff';
+    var newIcon = document.createElement('div');
+    newIcon.className = ('chats-logo');
+    var botLogo = "http://18.221.57.172/"+css.bot_logo;
+    console.log(botLogo)
+    newIcon.innerHTML = ('<img src= '+botLogo+'>');
+    // newIcon.appendChild(newIcon);
+    headerContainer.appendChild(newIcon)
+
     var responseContainer = document.querySelector('#responseContainer');
     //body background colour
     responseContainer.style.backgroundColor = css.body_color;
@@ -92,7 +107,7 @@ function showResponse(ajaxResponse, response) {
 
     var newItem1 = document.createElement('div');
     newItem1.className = ('received-chats-img');
-    var botImg = "https://18.221.57.172/"+css.bot_logo;
+    var botImg = "http://18.221.57.172/"+css.bot_logo;
     console.log(botImg)
     newItem1.innerHTML = ('<img src= '+botImg+'>');
     newItem.appendChild(newItem1);
@@ -148,7 +163,7 @@ function showResponse(ajaxResponse, response) {
 
             var newItem_oc2 = document.createElement('div');
             newItem_oc2.className = ('outgoing-chats-img');
-            var userImg = "https://18.221.57.172/"+css.user_logo;
+            var userImg = "http://18.221.57.172/"+css.user_logo;
             newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
             newItem_oc.appendChild(newItem_oc2);
 
@@ -178,6 +193,7 @@ function showResponse(ajaxResponse, response) {
 
     if (ajaxResponse[0].answer_type == 'TEXT') {
         document.getElementById("bolForm").style.display = "block";
+        document.getElementsByClassName("msg-bottom")[0].style.backgroundColor = css.header_colour;
     } else {
         document.getElementById("bolForm").style.display = "none";
     }
@@ -204,7 +220,7 @@ async function SaveFile(res)
     formData.append("asset", file);  
     
     try {
-       let r = await fetch('https://18.221.57.172/assets/file', {method: "POST", body: formData})
+       let r = await fetch('http://18.221.57.172/assets/file', {method: "POST", body: formData})
        .then(response => response.text())
         .then(data => 
             response = JSON.parse(data));
@@ -215,13 +231,13 @@ async function SaveFile(res)
             funFileMsg(textmsg, filePath);
         }
     } catch(e) {
-       console.log('Abhee we have problem...:', e);
+       console.log('Powerbot we have problem...:', e);
     }
     
 }
 
 async function funFileMsg(textmsg, filePath) {
-    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var Url = "http://18.221.57.172/bot-properties?source_url=";
     var params = window.location.href;
     var css;
     
@@ -264,7 +280,7 @@ async function funFileMsg(textmsg, filePath) {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "https://18.221.57.172/"+css.user_logo;
+        var userImg = "http://18.221.57.172/"+css.user_logo;
         newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
@@ -289,7 +305,7 @@ function doit_onkeypress(event) {
 }
 
 async function funTextMsg() {
-    var Url = "https://18.221.57.172/bot-properties?source_url=";
+    var Url = "http://18.221.57.172/bot-properties?source_url=";
     var params = window.location.href;
     var css;
     
@@ -305,11 +321,12 @@ async function funTextMsg() {
             console.log(response)
         }
     } catch(e) {
-       console.log('Abhee we have problem...:', e);
+       console.log('Powerbot we have problem...:', e);
     }
 
     if (document.getElementById("txtmsgid").value != '') {
         textmsg = document.getElementById("txtmsgid").value;
+        console.log(css)
 
         console.log(document.getElementById("resquestion").innerHTML);
         var responseContainer = document.querySelector('#responseContainer');
@@ -335,7 +352,7 @@ async function funTextMsg() {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img'); 
-        var userImg = "https://18.221.57.172/"+css.user_logo;
+        var userImg = "http://18.221.57.172/"+css.user_logo;
         newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);
 
