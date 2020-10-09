@@ -123,7 +123,7 @@ p {
     border: 1px solid #000000;
     background: #fff;
     margin-top: 5px;
-    margin-bottom: -20px;
+    margin-bottom: 0px;
 }
 
 /* #chat-box #inputs input {

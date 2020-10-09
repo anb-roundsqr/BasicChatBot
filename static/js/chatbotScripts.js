@@ -43,18 +43,23 @@ function funChatbox(text_msgs, ques_msg, response) {
     } else {
         question = ques_msg;
     }
-    var ip;
-
+    
+    var ip_sys = $.getJSON("https://api.ipify.org?format=json", 
+    function(data) { 
+       ip_sys = data.ip;
+       iprotocol(ip_sys)
+    }) 
+    function iprotocol(ip_sys) {
+        
     var Url = "http://18.221.57.172/client-form";
     var xhr = new XMLHttpRequest();
-    console.log( window.location.href)
     xhr.open('POST', Url, true);
     var data = JSON.stringify({
         "bot_id": 1,
         "location": window.location.href,
         "question": question,
         "text": textmsg,
-        "ip": '192.168.0.1',
+        "ip": ip_sys,
         "sessionId": "3c3a3f6a-7cbc-4b99-b058-1734c842c6ec"
     });
     xhr.send(data);
@@ -67,8 +72,8 @@ function funChatbox(text_msgs, ques_msg, response) {
             showResponse(ajaxResponse, response);
         }
     }
+    }
 }
-
 
 
 function showResponse(ajaxResponse, response) {
