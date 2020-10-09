@@ -1020,7 +1020,7 @@ class ClientForm(views.APIView):
             if body_raw_input:
                 result["message"], bot_info = self.validate_bot_info(body_raw_input)
                 if not result["message"]:
-                    func_res = self.bot_conversation(bot_info)
+                    func_res = self.bot_conversation(bot_info, request)
                     if isinstance(func_res, dict):
                         result.update(func_res)
                     if isinstance(func_res, list):
@@ -1033,7 +1033,7 @@ class ClientForm(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def bot_conversation(self, bot_info):
+    def bot_conversation(self, bot_info, request):
 
         result = {
             "message": "Invalid bot_info",
@@ -1041,7 +1041,6 @@ class ClientForm(views.APIView):
             "response": ""
         }
         try:
-
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
             customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
@@ -1058,6 +1057,13 @@ class ClientForm(views.APIView):
                 print('ip match', match)
                 print('current question', bot_info['question'])
                 if bot_info['question'].lower() != "welcome":
+                    session_id = bot_info["sessionId"]
+                    result["message"] = "invalid session"
+                    if "chat_session_%s" % bot_info["sessionId"] not in request.session:
+                        return result
+                    result["message"] = "session and location not matched"
+                    if request.session["chat_session_%s" % bot_info["sessionId"]] != bot_info["location"]:
+                        return result
                     print("Check1")
                     submitted_question = [
                         question for question in questions if question[
@@ -1194,7 +1200,7 @@ class ClientForm(views.APIView):
                     con_obj.customer = customer_bot.customer
                     con_obj.text = bot_info["text"]
                     con_obj.ip_address = bot_info["ip"]
-                    con_obj.session_id = bot_info["sessionId"]
+                    con_obj.session_id = session_id
                     con_obj.sender = "me"
                     if match:
                         con_obj.latitude = match.location[0]
@@ -1202,12 +1208,12 @@ class ClientForm(views.APIView):
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
                 else:
-                    session_id = str(uuid.uuid4)
+                    session_id = str(uuid.uuid4())
                     print('session_id', session_id)
-                    # request.session[
-                    #     "user_details_%s" % str(user.id)
-                    # ] = str(result["response"])
-                    # request.session.set_expiry(86400)
+                    request.session[
+                        "chat_session_%s" % session_id
+                    ] = str(bot_info["location"])
+                    request.session.set_expiry(86400)
                 # print('questions', questions)
                 suggested_answers = [{
                     "payload": sug_ans,
@@ -1220,7 +1226,8 @@ class ClientForm(views.APIView):
                     'question_id': next_question['question_id'],
                     'answer_type': next_question['answer_type'],
                     'suggested_answers': suggested_answers,
-                    'is_last_question': next_question["is_last_question"]
+                    'is_last_question': next_question["is_last_question"],
+                    'sessionId': session_id
                 }
                 result = {
                     "message": "next question info",
@@ -1228,12 +1235,13 @@ class ClientForm(views.APIView):
                     "response": required_next_question
                 }
                 if errors:
+                    required_next_question.update({"error_msg": errors[0]})
                     con_obj = Conversation()
                     con_obj.bot = customer_bot.bot
                     con_obj.customer = customer_bot.customer
                     con_obj.text = errors[0]
                     con_obj.ip_address = bot_info["ip"]
-                    con_obj.session_id = bot_info["sessionId"]
+                    con_obj.session_id = session_id
                     con_obj.sender = 'bot'
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
@@ -1245,7 +1253,7 @@ class ClientForm(views.APIView):
                 con_obj.customer = customer_bot.customer
                 con_obj.text = required_next_question["question"]
                 con_obj.ip_address = bot_info["ip"]
-                con_obj.session_id = bot_info["sessionId"]
+                con_obj.session_id = session_id
                 con_obj.sender = 'bot'
                 con_obj.update_date_time = datetime.now(tz=timezone.utc)
                 con_obj.save()
