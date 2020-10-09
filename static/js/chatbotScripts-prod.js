@@ -338,7 +338,7 @@ async function funTextMsg() {
 
         console.log(document.getElementById("resquestion").innerHTML);
         var responseContainer = document.querySelector('#responseContainer');
-        responseContainer.style.backgroundColor = css.body_colour;
+        // responseContainer.style.backgroundColor = css.body_colour;
 
         var newItem_oc = document.createElement('div');
         newItem_oc.className = ('outgoing-chats');
