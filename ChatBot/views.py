@@ -1200,7 +1200,7 @@ class ClientForm(views.APIView):
                     con_obj.customer = customer_bot.customer
                     con_obj.text = bot_info["text"]
                     con_obj.ip_address = bot_info["ip"]
-                    con_obj.session_id = bot_info["sessionId"]
+                    con_obj.session_id = session_id
                     con_obj.sender = "me"
                     if match:
                         con_obj.latitude = match.location[0]
@@ -1241,7 +1241,7 @@ class ClientForm(views.APIView):
                     con_obj.customer = customer_bot.customer
                     con_obj.text = errors[0]
                     con_obj.ip_address = bot_info["ip"]
-                    con_obj.session_id = bot_info["sessionId"]
+                    con_obj.session_id = session_id
                     con_obj.sender = 'bot'
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
@@ -1253,7 +1253,7 @@ class ClientForm(views.APIView):
                 con_obj.customer = customer_bot.customer
                 con_obj.text = required_next_question["question"]
                 con_obj.ip_address = bot_info["ip"]
-                con_obj.session_id = bot_info["sessionId"]
+                con_obj.session_id = session_id
                 con_obj.sender = 'bot'
                 con_obj.update_date_time = datetime.now(tz=timezone.utc)
                 con_obj.save()
