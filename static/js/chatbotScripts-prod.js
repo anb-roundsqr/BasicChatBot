@@ -60,7 +60,7 @@ function funChatbox(text_msgs, ques_msg, response) {
         "location": window.location.href,
         "question": question,
         "text": textmsg,
-        "ip": ip_sys,
+        "ip": "192.168.0.1",
         "sessionId": "3c3a3f6a-7cbc-4b99-b058-1734c842c6ec"
     });
     xhr.send(data);
