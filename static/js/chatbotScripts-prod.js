@@ -266,7 +266,7 @@ async function funFileMsg(textmsg, filePath) {
     if (textmsg) {
         textmsg = textmsg;
         var responseContainer = document.querySelector('#responseContainer');
-        responseContainer.style.backgroundColor = css.body_color;
+        // responseContainer.style.backgroundColor = css.body_color;
 
         var newItem_oc = document.createElement('div');
         newItem_oc.className = ('outgoing-chats');
