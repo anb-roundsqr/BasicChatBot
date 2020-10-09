@@ -4,7 +4,8 @@ from django.utils import timezone
 from ChatBot.functions import (
     process_api_exception,
     exception_handler,
-    time_stamp_to_date_format
+    time_stamp_to_date_format,
+    send_email
 )
 from ChatBot.models import (
     BotConfiguration,
@@ -51,6 +52,7 @@ from random import randint, choice
 import string
 import base64
 import jwt
+import uuid
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -104,6 +106,24 @@ class CustomerViewSet(viewsets.ViewSet):
                 context=serializer_context)
             customer_serializer.is_valid(raise_exception=True)
             customer_serializer.save()
+            template = "emails/customer_register.html"
+            context = {
+                'point_of_contact': customer_serializer.data["name"],
+                'org_name': requested_data["org_name"],
+                'username': requested_data["mobile"],
+                'password': password,
+                'login_url': "chatbot.roundsqr.net/clients",
+                'official_signature': 'RAJA DEVARAKONDA'
+            }
+            recipient = requested_data["email_id"]
+            subject = "Congrats RoundSqr Customer"
+            send_email(
+                template,
+                context,
+                recipient,
+                subject,
+                1,  # auth_result["user"].id
+            )
             result.update({
                 "message": "customer created",
                 "status": "success",
@@ -769,6 +789,8 @@ class ClientConfiguration(views.APIView):
                         question_obj.date_created = datetime.now(
                             tz=timezone.utc
                         )
+                        if "is_first_question" in question:
+                            question_obj.is_last_question = question["is_first_question"]
                         if "is_last_question" in question:
                             question_obj.is_last_question = question["is_last_question"]
                         if "is_lead_gen_question" in question:
@@ -953,6 +975,11 @@ class ClientConfiguration(views.APIView):
                             else:
                                 question["related"] = False
                             print('related', question['related'])
+                        if "is_first_question" in question:
+                            if question["is_first_question"] == "true":
+                                question["is_first_question"] = True
+                            else:
+                                question["is_first_question"] = False
                         if "is_last_question" in question:
                             if question["is_last_question"] == "true":
                                 question["is_last_question"] = True
@@ -1014,11 +1041,13 @@ class ClientForm(views.APIView):
             "response": ""
         }
         try:
+
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
             customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
             result = ClientConfiguration().retrieve_sections(customer_bot.customer_id, customer_bot.bot_id)
             if result["status"] == "success":
+                errors = []
                 questions = result["response"]
                 result["response"] = ""
                 result["status"] = "failed"
@@ -1051,6 +1080,9 @@ class ClientForm(views.APIView):
                         is_related = submitted_question['related']
                         sug_answers = submitted_question['suggested_answers']
                         sug_jump = submitted_question['suggested_jump']
+                        validity1 = submitted_question["validation1"]
+                        validity2 = submitted_question["validation2"]
+                        error_msg = submitted_question["error_msg"]
                         print('is_related', is_related)
                         if is_related:
                             print("this is related question")
@@ -1096,18 +1128,66 @@ class ClientForm(views.APIView):
                                     result["message"] = "invalid answer"
                                     return result
                             else:
-                                if isinstance(sug_jump, list):
-                                    next_question = sug_jump[0]
-                                else:
-                                    next_question = sug_jump
-                                print('next_question', next_question)
-                                next_question = [
-                                    question
-                                    for question in questions
-                                    if question[
-                                        'question'
-                                    ] == next_question
-                                ][0]
+                                if submitted_question["answer_type"] == "TEXT":
+                                    contains_digit = any(map(str.isdigit, bot_info["text"]))
+                                    print('contains_digit', contains_digit)
+                                    regex = re.compile(r'[@_!#$%^&*()<>?/\|}{~:]')
+                                    contains_specials = regex.search(bot_info["text"])
+                                    print('contains_specials', contains_specials)
+                                    contains_email = re.match(
+                                        r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
+                                        bot_info["text"]
+                                    )
+                                    print('contains_email', contains_email)
+                                    contains_phone_number = re.match(r'(^[+0-9]{1,3})*([0-9]{10,11}$)', bot_info["text"])
+                                    print('contains_phone_number', contains_phone_number)
+                                    if validity1 == "Contains":
+                                        if validity2 == "Numbers":
+                                            if contains_digit:
+                                                errors.append(error_msg)
+                                        elif validity2 == "Special characters":
+                                            if contains_specials:
+                                                errors.append(error_msg)
+                                        elif validity2 == "Both":
+                                            if contains_digit and contains_specials:
+                                                errors.append(error_msg)
+                                        elif validity2 == "Email address":
+                                            if contains_email:
+                                                errors.append(error_msg)
+                                        elif validity2 == "Phone number":
+                                            if contains_phone_number:
+                                                errors.append(error_msg)
+                                    elif validity1 == "Does not contain":
+                                        if validity2 == "Numbers":
+                                            if not contains_digit:
+                                                errors.append(error_msg)
+                                        elif validity2 == "Special characters":
+                                            if not contains_specials:
+                                                errors.append(error_msg)
+                                        elif validity2 == "Both":
+                                            if not (contains_digit and contains_specials):
+                                                errors.append(error_msg)
+                                        elif validity2 == "Email address":
+                                            if contains_email:
+                                                errors.append(error_msg)
+                                        elif validity2 == "Phone number":
+                                            if contains_phone_number:
+                                                errors.append(error_msg)
+                                    if errors:
+                                        next_question = submitted_question
+                                    else:
+                                        if isinstance(sug_jump, list):
+                                            next_question = sug_jump[0]
+                                        else:
+                                            next_question = sug_jump
+                                        print('next_question', next_question)
+                                        next_question = [
+                                            question
+                                            for question in questions
+                                            if question[
+                                                   'question'
+                                               ] == next_question
+                                        ][0]
                     print('bot', customer_bot.bot)
                     con_obj = Conversation()
                     con_obj.bot = customer_bot.bot
@@ -1121,6 +1201,13 @@ class ClientForm(views.APIView):
                         con_obj.longitude = match.location[1]
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
+                else:
+                    session_id = str(uuid.uuid4)
+                    print('session_id', session_id)
+                    # request.session[
+                    #     "user_details_%s" % str(user.id)
+                    # ] = str(result["response"])
+                    # request.session.set_expiry(86400)
                 # print('questions', questions)
                 suggested_answers = [{
                     "payload": sug_ans,
@@ -1133,15 +1220,26 @@ class ClientForm(views.APIView):
                     'question_id': next_question['question_id'],
                     'answer_type': next_question['answer_type'],
                     'suggested_answers': suggested_answers,
-                    'is_last_question': False
+                    'is_last_question': next_question["is_last_question"]
                 }
-                if 'thanks' in next_question['question'].lower():
-                    required_next_question['is_last_question'] = True
                 result = {
                     "message": "next question info",
                     "status": "success",
                     "response": required_next_question
                 }
+                if errors:
+                    con_obj = Conversation()
+                    con_obj.bot = customer_bot.bot
+                    con_obj.customer = customer_bot.customer
+                    con_obj.text = errors[0]
+                    con_obj.ip_address = bot_info["ip"]
+                    con_obj.session_id = bot_info["sessionId"]
+                    con_obj.sender = 'bot'
+                    con_obj.update_date_time = datetime.now(tz=timezone.utc)
+                    con_obj.save()
+                    result = errors + [required_next_question]
+                else:
+                    result = [required_next_question]
                 con_obj = Conversation()
                 con_obj.bot = customer_bot.bot
                 con_obj.customer = customer_bot.customer
@@ -1151,7 +1249,6 @@ class ClientForm(views.APIView):
                 con_obj.sender = 'bot'
                 con_obj.update_date_time = datetime.now(tz=timezone.utc)
                 con_obj.save()
-                result = [required_next_question]
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
         except Exception as e:
@@ -1725,3 +1822,80 @@ class TokenAuthentication(authentication.BaseAuthentication):
 
     def authenticate_header(self, request):
         return 'Token'
+
+
+class ForgotPassword(views.APIView):
+
+    def get(self, request, **kwargs):
+        print("PATH_INFO", request.META["PATH_INFO"])
+        print("kwargs slug", kwargs)
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            email_id = self.validate_emailid(
+                request.query_params["email_id"].lower()
+            )  # requested_data)
+            if "HTTP_ORIGIN" in request.META:
+                WEB_HOST = request.META["HTTP_ORIGIN"]
+            else:
+                WEB_HOST = "%s://%s" % (
+                    request.META["wsgi.url_scheme"],
+                    request.META["HTTP_HOST"])
+            context = {
+                'point_of_contact': "",
+                'username': email_id,
+                'password': "",
+                'login_url': "%s/login" % WEB_HOST,
+                'official_signature': 'RAJA DEVARAKONDA'
+            }
+            if "admin" in request.META["PATH_INFO"]:
+                org_name = "RoundSqr"
+                user_info = Admin.objects.get(email_id=email_id)
+                context["point_of_contact"] = user_info.full_name
+                context["password"] = base64.b64decode(
+                    user_info.password
+                ).decode()
+            else:  # if "organizations" in request.META["PATH_INFO"]:
+                customer = Customers.objects.get(
+                    email_id=email_id,
+                    is_deleted=False
+                )
+                org_name = customer.org_name
+                context["point_of_contact"] = customer.name
+                context["password"] = base64.b64decode(
+                    customer.password).decode()
+            template = "emails/forgot_password.html"
+            recipient = email_id
+            subject = "Your %s account password" % org_name
+            send_email(template, context, recipient, subject, None)
+            result.update({
+                "message": "password retrieved successfully",
+                "status": "success"
+            })
+        except Admin.DoesNotExist:
+            result["message"] = "invalid email_id"
+        except Customers.DoesNotExist:
+            result["message"] = "invalid email_id"
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            result.update(exception_handler(e))
+        print("result", result)
+        return response.Response(result)
+
+    def validate_emailid(self, email_id):
+        if not re.match(
+            r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
+            email_id
+        ):
+            raise exceptions.ValidationError({
+                "email": ["Invalid `%s` value." % email_id]
+            })
+        return email_id

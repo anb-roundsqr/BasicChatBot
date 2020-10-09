@@ -27,6 +27,7 @@ from ChatBot.views import (
     register_admin,
     Logout,
     Login,
+    ForgotPassword,
 )
 from rest_framework.routers import DefaultRouter
 
@@ -39,6 +40,8 @@ urlpatterns = [
     path(r'', include(router.urls)),
     path('admin/', admin.site.urls),
     path('admin/create', register_admin),
+    path('admin/forgot-password', ForgotPassword.as_view()),
+    path('forgot-password', ForgotPassword.as_view()),
     re_path(r'client-config', ClientConfiguration.as_view()),
     re_path(r'bot-properties$', BotProperties.as_view()),
     re_path(r'client-form', ClientForm.as_view()),

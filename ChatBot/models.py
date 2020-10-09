@@ -171,6 +171,7 @@ class BotConfiguration(models.Model):
     is_deleted = models.BooleanField(default=False)
     required = models.CharField(max_length=4, default="no")
     related = models.BooleanField(default=False)
+    is_first_question = models.BooleanField(default=False)
     is_last_question = models.BooleanField(default=False)
     is_lead_gen_question = models.BooleanField(default=False)
 
