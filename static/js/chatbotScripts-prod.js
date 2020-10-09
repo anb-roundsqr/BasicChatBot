@@ -104,7 +104,7 @@ function showResponse(ajaxResponse, response) {
 
     var responseContainer = document.querySelector('#responseContainer');
     //body background colour
-    responseContainer.style.backgroundColor = css.body_color;
+    // responseContainer.style.backgroundColor = css.body_color;
 
     var linebreak = document.createElement("br");
 
