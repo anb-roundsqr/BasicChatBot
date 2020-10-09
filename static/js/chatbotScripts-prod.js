@@ -45,12 +45,12 @@ function funChatbox(text_msgs, ques_msg, response) {
         question = ques_msg;
     }
 
-    var ip_sys = $.getJSON("https://api.ipify.org?format=json", 
-    function(data) { 
-       ip_sys = data.ip;
-       iprotocol(ip_sys)
-    }) 
-    function iprotocol(ip_sys) {
+    // var ip_sys = $.getJSON("https://api.ipify.org?format=json", 
+    // function(data) { 
+    //    ip_sys = data.ip;
+    //    iprotocol(ip_sys)
+    // }) 
+    // function iprotocol(ip_sys) {
         
     var Url = "https://api.chatbot.roundsqr.net/client-form";
     var xhr = new XMLHttpRequest();
@@ -73,7 +73,7 @@ function funChatbox(text_msgs, ques_msg, response) {
             showResponse(ajaxResponse, response);
         }
     }
-    }
+    // }
 }
 
 
