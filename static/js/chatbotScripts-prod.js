@@ -44,21 +44,21 @@ function funChatbox(text_msgs, ques_msg, response) {
     } else {
         question = ques_msg;
     }
-    jQuery.get("https://api.ipdata.co?api-key=test", function (response) {
-        console.log(response.ip);
-    }, "jsonp");
-    jQuery.getJSON("https://api.ipify.org?format=json",
-        function (data) {
-           var ip_sys = data.ip;
-            console.log(ip_sys)
-        })
-
-    // var ip_sys = $.getJSON("https://api.ipify.org?format=json",
+    // jQuery.get("https://api.ipdata.co?api-key=test", function (response) {
+    //     console.log(response.ip);
+    // }, "jsonp");
+    // jQuery.getJSON("https://api.ipify.org?format=json",
     //     function (data) {
-    //         ip_sys = data.ip;
-    //         iprotocol(ip_sys)
+    //        var ip_sys = data.ip;
+    //         console.log(ip_sys)
     //     })
-    // function iprotocol(ip_sys) {
+
+    var ip_sys = jQuery.getJSON("https://api.ipify.org?format=json",
+        function (data) {
+            ip_sys = data.ip;
+            iprotocol(ip_sys)
+        })
+    function iprotocol(ip_sys) {
 
         var Url = "https://api.chatbot.roundsqr.net/client-form";
         var xhr = new XMLHttpRequest();
@@ -68,7 +68,7 @@ function funChatbox(text_msgs, ques_msg, response) {
             "location": window.location.href,
             "question": question,
             "text": textmsg,
-            "ip": "192.168.0.1",
+            "ip": ip_sys,
             "sessionId": "3c3a3f6a-7cbc-4b99-b058-1734c842c6ec"
         });
         xhr.send(data);
@@ -81,7 +81,7 @@ function funChatbox(text_msgs, ques_msg, response) {
                 showResponse(ajaxResponse, response);
             }
         }
-    // }
+    }
 }
 
 function showResponse(ajaxResponse, response) {
