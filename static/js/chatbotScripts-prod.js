@@ -44,10 +44,10 @@ function funChatbox(text_msgs, ques_msg, response) {
     } else {
         question = ques_msg;
     }
-    $.get("https://api.ipdata.co?api-key=test", function (response) {
+    jQuery.get("https://api.ipdata.co?api-key=test", function (response) {
         console.log(response.ip);
     }, "jsonp");
-    $.getJSON("https://api.ipify.org?format=json",
+    jQuery.getJSON("https://api.ipify.org?format=json",
         function (data) {
            var ip_sys = data.ip;
             console.log(ip_sys)
