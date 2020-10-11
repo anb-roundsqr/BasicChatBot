@@ -13,6 +13,13 @@
     link.setAttribute("href", "https://api.chatbot.roundsqr.net/static/css/style.css");
     document.head.appendChild(link);
 
+    var jScript = document.createElement("script");
+    jScript.setAttribute("rel", "stylesheet");
+    jScript.setAttribute("type", "text/javascript");
+    jScript.setAttribute("href", "https://code.jquery.com/jquery-3.5.1.js");
+    document.head.appendChild(jScript);
+
+
     var link1 = document.createElement("LINK");
     link1.setAttribute("rel", "stylesheet");
     link1.setAttribute("type", "text/css");
