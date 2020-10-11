@@ -122,14 +122,14 @@ function showResponse(ajaxResponse, response) {
         var linebreakError = document.createElement("br");
 
         var newItemError = document.createElement('div');
-        newInewItemErrortem.className = ('received-chats-error');
+        newItemError.className = ('received-chats-error');
 
         var newItem1Error = document.createElement('div');
-        newItem1Error.className = ('received-chats-img');
+        newItem1Error.className = ('received-chats-img-error');
         var botImgError = "https://api.chatbot.roundsqr.net/" + css.bot_logo;
         console.log(botImgError)
-        newItem1Error.innerHTML = ('<img src= ' + botImg + '>');
-        newItemError.appendChild(newItem1);
+        newItem1Error.innerHTML = ('<img src= ' + botImgError + '>');
+        newItemError.appendChild(newItem1Error);
 
         var newItem2Error = document.createElement('div');
         newItem2Error.className = ('received-msg-error');
