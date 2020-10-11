@@ -1163,7 +1163,7 @@ class ClientForm(views.APIView):
                                         elif validity2 == "Phone number":
                                             if contains_phone_number:
                                                 errors.append(error_msg)
-                                    elif validity1 == "Does not contain":
+                                    elif validity1 == "Not contains":
                                         if validity2 == "Numbers":
                                             if not contains_digit:
                                                 errors.append(error_msg)
@@ -1259,6 +1259,11 @@ class ClientForm(views.APIView):
                 con_obj.save()
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
         except Exception as e:
             print("exception")
             result.update(exception_handler(e))
