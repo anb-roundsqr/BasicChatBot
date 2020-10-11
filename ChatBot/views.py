@@ -1058,11 +1058,12 @@ class ClientForm(views.APIView):
                 print('current question', bot_info['question'])
                 if bot_info['question'].lower() != "welcome":
                     session_id = bot_info["sessionId"]
+                    print("session keys", request.session.keys())
                     # result["message"] = "invalid session"
                     # if "chat_session_%s" % str(bot_info["sessionId"]) not in request.session:
                     #     return result
                     # result["message"] = "session and location not matched"
-                    # if request.session["chat_session_%s" % str(bot_info["sessionId"])] != bot_info["location"]:
+                    # if request.session.get("chat_session_%s" % str(bot_info["sessionId"])) != bot_info["location"]:
                     #     return result
                     print("Check1")
                     submitted_question = [
@@ -1147,6 +1148,9 @@ class ClientForm(views.APIView):
                                     print('contains_email', contains_email)
                                     contains_phone_number = re.match(r'(^[+0-9]{1,3})*([0-9]{10,11}$)', bot_info["text"])
                                     print('contains_phone_number', contains_phone_number)
+                                    print('validity1', validity1)
+                                    print('validity2', validity2)
+                                    print('error_msg', error_msg)
                                     if validity1 == "Contains":
                                         if validity2 == "Numbers":
                                             if contains_digit:
@@ -1163,7 +1167,7 @@ class ClientForm(views.APIView):
                                         elif validity2 == "Phone number":
                                             if contains_phone_number:
                                                 errors.append(error_msg)
-                                    elif validity1 == "Does not contain":
+                                    elif validity1 == "Not Contains":
                                         if validity2 == "Numbers":
                                             if not contains_digit:
                                                 errors.append(error_msg)
@@ -1174,11 +1178,12 @@ class ClientForm(views.APIView):
                                             if not (contains_digit and contains_specials):
                                                 errors.append(error_msg)
                                         elif validity2 == "Email address":
-                                            if contains_email:
+                                            if not contains_email:
                                                 errors.append(error_msg)
                                         elif validity2 == "Phone number":
-                                            if contains_phone_number:
+                                            if not contains_phone_number:
                                                 errors.append(error_msg)
+                                    print("errors", errors)
                                     if errors:
                                         next_question = submitted_question
                                     else:
@@ -1245,9 +1250,6 @@ class ClientForm(views.APIView):
                     con_obj.sender = 'bot'
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
-                    result = errors + [required_next_question]
-                else:
-                    result = [required_next_question]
                 con_obj = Conversation()
                 con_obj.bot = customer_bot.bot
                 con_obj.customer = customer_bot.customer
@@ -1257,8 +1259,14 @@ class ClientForm(views.APIView):
                 con_obj.sender = 'bot'
                 con_obj.update_date_time = datetime.now(tz=timezone.utc)
                 con_obj.save()
+                result = [required_next_question]
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
+        except KeyError as e:
+            result.update({
+                "message": "API Error",
+                "response": {e.args[0]: "This field is required."}
+            })
         except Exception as e:
             print("exception")
             result.update(exception_handler(e))
