@@ -1059,12 +1059,12 @@ class ClientForm(views.APIView):
                 if bot_info['question'].lower() != "welcome":
                     session_id = bot_info["sessionId"]
                     print("session keys", request.session.keys())
-                    # result["message"] = "invalid session"
-                    # if "chat_session_%s" % str(bot_info["sessionId"]) not in request.session:
-                    #     return result
-                    # result["message"] = "session and location not matched"
-                    # if request.session.get("chat_session_%s" % str(bot_info["sessionId"])) != bot_info["location"]:
-                    #     return result
+                    result["message"] = "invalid session"
+                    if "chat_session_%s" % str(bot_info["sessionId"]) not in request.session:
+                        return result
+                    result["message"] = "session and location not matched"
+                    if request.session.get("chat_session_%s" % str(bot_info["sessionId"])) != bot_info["location"]:
+                        return result
                     print("Check1")
                     submitted_question = [
                         question for question in questions if question[
