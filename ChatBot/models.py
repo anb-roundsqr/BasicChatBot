@@ -110,6 +110,11 @@ class CustomerBots(models.Model):
     date_modified = models.DateTimeField(null=True, blank=True)
     created_by_id = models.IntegerField(null=True)
     updated_by_id = models.IntegerField(null=True)
+    '''
+    If for_whole_site is false, main domain of this
+    source url may have multiple bots configuration.
+    '''
+    for_whole_site = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'ChatBot'
