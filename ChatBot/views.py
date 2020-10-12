@@ -1043,7 +1043,7 @@ class ClientForm(views.APIView):
         try:
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
-            customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
+            customer_bot = CustomerBots.objects.get(source_url=source_url)
             result = ClientConfiguration().retrieve_sections(customer_bot.customer_id, customer_bot.bot_id)
             if result["status"] == "success":
                 errors = []
@@ -1135,6 +1135,18 @@ class ClientForm(views.APIView):
                                     result["message"] = "invalid answer"
                                     return result
                             else:
+                                if isinstance(sug_jump, list):
+                                    next_question = sug_jump[0]
+                                else:
+                                    next_question = sug_jump
+                                print('next_question', next_question)
+                                next_question = [
+                                    question
+                                    for question in questions
+                                    if question[
+                                           'question'
+                                       ] == next_question
+                                ][0]
                                 if submitted_question["answer_type"] == "TEXT":
                                     contains_digit = any(map(str.isdigit, bot_info["text"]))
                                     print('contains_digit', contains_digit)
@@ -1186,19 +1198,6 @@ class ClientForm(views.APIView):
                                     print("errors", errors)
                                     if errors:
                                         next_question = submitted_question
-                                    else:
-                                        if isinstance(sug_jump, list):
-                                            next_question = sug_jump[0]
-                                        else:
-                                            next_question = sug_jump
-                                        print('next_question', next_question)
-                                        next_question = [
-                                            question
-                                            for question in questions
-                                            if question[
-                                                   'question'
-                                               ] == next_question
-                                        ][0]
                     print('bot', customer_bot.bot)
                     con_obj = Conversation()
                     con_obj.bot = customer_bot.bot
