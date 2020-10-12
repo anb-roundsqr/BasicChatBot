@@ -121,7 +121,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = (
     'https://api.chatbot.roundsqr.net',
-    'https://app.chatbot.roundsqr.net',
+    'http://app.chatbot.roundsqr.net',
     'http://localhost:3000',
 )
 
