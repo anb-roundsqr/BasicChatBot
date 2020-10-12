@@ -1043,7 +1043,7 @@ class ClientForm(views.APIView):
         try:
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
-            customer_bot = CustomerBots.objects.get(source_url=source_url)  # bot_id will changed to source_url
+            customer_bot = CustomerBots.objects.get(source_url=source_url)
             result = ClientConfiguration().retrieve_sections(customer_bot.customer_id, customer_bot.bot_id)
             if result["status"] == "success":
                 errors = []
