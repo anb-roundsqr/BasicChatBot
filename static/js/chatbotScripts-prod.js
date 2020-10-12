@@ -1,3 +1,4 @@
+var sessionIdGlobal = '';
 
 function onLoad() {
     var location_Url = window.location.href;
@@ -20,7 +21,7 @@ async function funCss(location_Url) {
             if (location_Url) {
                 var text_msg = "yes";
                 var question = "welcome";
-                funChatbox(text_msg, question, response);
+                funChatbox(text_msg, question, response, '');
             }
         }
     } catch (e) {
@@ -29,9 +30,11 @@ async function funCss(location_Url) {
 }
 
 
-function funChatbox(text_msgs, ques_msg, response) {
+function funChatbox(text_msgs, ques_msg, response, sessionId) {
 
     var textmsg;
+    sessionIdGlobal = sessionId;
+
     if (text_msgs == '') {
         textmsg = document.getElementById("txtmsgid").value;
     } else {
@@ -69,7 +72,7 @@ function funChatbox(text_msgs, ques_msg, response) {
             "question": question,
             "text": textmsg,
             "ip": ip_sys,
-            "sessionId": "3c3a3f6a-7cbc-4b99-b058-1734c842c6ec"
+            "sessionId": sessionId
         });
         xhr.send(data);
         xhr.onreadystatechange = processRequest;
@@ -87,7 +90,7 @@ function funChatbox(text_msgs, ques_msg, response) {
 function showResponse(ajaxResponse, response) {
     console.log(response);
     var seconds = new Date().getTime() / 1000;
-    console.log(seconds)
+    console.log(seconds) 
     var css = response.response;
     console.log(css.header_colour)
     var headerBlock = document.getElementById('mydiv');
@@ -230,7 +233,7 @@ function showResponse(ajaxResponse, response) {
             responseContainer.appendChild(newItem_oc);
             responseContainer.scrollTop = responseContainer.scrollHeight;
 
-            funChatbox(btnValue, ajaxResponse[0].question, response);
+            funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
 
         });
         span.appendChild(newbtn);
@@ -346,7 +349,7 @@ async function funFileMsg(textmsg, filePath) {
         responseContainer.appendChild(newItem_oc);
         responseContainer.scrollTop = responseContainer.scrollHeight;
 
-        funChatbox(filePath, '', response);
+        funChatbox(filePath, '', response, sessionIdGlobal);
     } else {
         alert("Please enter your Text Message.")
     }
@@ -418,7 +421,7 @@ async function funTextMsg() {
         responseContainer.appendChild(newItem_oc);
         responseContainer.scrollTop = responseContainer.scrollHeight;
 
-        funChatbox('', '', response);
+        funChatbox('', '', response, sessionIdGlobal);
     } else {
         alert("Please enter your Text Message.")
     }
