@@ -1135,6 +1135,18 @@ class ClientForm(views.APIView):
                                     result["message"] = "invalid answer"
                                     return result
                             else:
+                                if isinstance(sug_jump, list):
+                                    next_question = sug_jump[0]
+                                else:
+                                    next_question = sug_jump
+                                print('next_question', next_question)
+                                next_question = [
+                                    question
+                                    for question in questions
+                                    if question[
+                                           'question'
+                                       ] == next_question
+                                ][0]
                                 if submitted_question["answer_type"] == "TEXT":
                                     contains_digit = any(map(str.isdigit, bot_info["text"]))
                                     print('contains_digit', contains_digit)
@@ -1186,19 +1198,6 @@ class ClientForm(views.APIView):
                                     print("errors", errors)
                                     if errors:
                                         next_question = submitted_question
-                                    else:
-                                        if isinstance(sug_jump, list):
-                                            next_question = sug_jump[0]
-                                        else:
-                                            next_question = sug_jump
-                                        print('next_question', next_question)
-                                        next_question = [
-                                            question
-                                            for question in questions
-                                            if question[
-                                                   'question'
-                                               ] == next_question
-                                        ][0]
                     print('bot', customer_bot.bot)
                     con_obj = Conversation()
                     con_obj.bot = customer_bot.bot
