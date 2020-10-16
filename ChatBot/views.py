@@ -46,7 +46,7 @@ import re
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import os
-from ChatBot.settings import STATICFILES_DIRS
+from ChatBot.settings_base import STATICFILES_DIRS
 import time
 from random import randint, choice
 import string
