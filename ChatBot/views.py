@@ -1220,8 +1220,9 @@ class ClientForm(views.APIView):
                     request.session.set_expiry(86400)
                 # print('questions', questions)
                 suggested_answers = [{
-                    "payload": sug_ans,
-                    "title": sug_ans
+                    "payload": sug_ans['payload'],
+                    "title": sug_ans['title'],
+                    "type": "text" if "static/" in sug_ans['payload'] else "file"
                 } for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
