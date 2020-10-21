@@ -1,4 +1,4 @@
-// Anonymous "self-invoking" function
+
 (function() {
     var startingTime = new Date().getTime();
     // Load the script
