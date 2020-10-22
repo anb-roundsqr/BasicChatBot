@@ -3,7 +3,7 @@
     var startingTime = new Date().getTime();
     // Load the script
     var script = document.createElement('script');
-    script.src = 'https://api.chatbotqa.roundsqr.net/static/js/chatbotScripts-prod.js';
+    script.src = 'https://api.chatbotqa.roundsqr.net/static/js/chatbotScripts-qa.js';
     script.type = 'text/javascript';
     document.getElementsByTagName('head')[0].appendChild(script);
 
