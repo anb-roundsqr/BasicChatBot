@@ -1229,7 +1229,7 @@ class ClientForm(views.APIView):
                     'question': next_question['question'],
                     'question_id': next_question['question_id'],
                     'answer_type': next_question['answer_type'],
-                    'type': 'file' if 'static/' in suggested_answers[0]['payload'] else 'text',
+                    'type': 'file' if suggested_answers and 'payload' in suggested_answers[0] and 'static/' in suggested_answers[0]['payload'] else 'text',
                     'suggested_answers': suggested_answers,
                     'is_last_question': next_question["is_last_question"],
                     'sessionId': session_id
