@@ -1095,9 +1095,9 @@ class ClientForm(views.APIView):
                             print("this is related question")
                             if len(sug_answers) > 0:
                                 print("current answer", bot_info["text"])
-                                if bot_info['text'] in sug_answers:
-                                    next_index = sug_answers.index(
-                                        bot_info['text'])
+                                ans_list = [ans['title'] for ans in sug_answers if 'title' in ans]
+                                if bot_info['text'] in ans_list:
+                                    next_index = ans_list.index(bot_info['text'])
                                     print('next_index', next_index)
                                     if isinstance(sug_jump, list):
                                         if next_index < len(sug_jump):
