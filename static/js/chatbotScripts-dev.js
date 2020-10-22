@@ -192,51 +192,100 @@ function showResponse(ajaxResponse, response) {
     span.appendChild(linebreak);
 
     var sug_answers = ajaxResponse[0].suggested_answers;
-    for (var x = 0; x < sug_answers.length; x++) {
-        var newbtn = document.createElement('input');
-        newbtn.type = 'button';
-        newbtn.value = sug_answers[x].payload;
-        newbtn.innerHTML = sug_answers[x].title;
-        newbtn.addEventListener("click", function (event) {
-            var btnValue = event.target.value;
 
-            var newItem_oc = document.createElement('div');
-            newItem_oc.className = ('outgoing-chats');
-            //user chat container background color
-            // newItem_oc.style.backgroundColor = '#ccffff';
+    if(ajaxResponse[0].type == 'file') {
+        
+        for (var x = 0; x < sug_answers.length; x++) {
+            var newbtn = document.createElement('IMG');
+            // newbtn.type = 'button';
+            newbtn.src = sug_answers[x].payload;
+            newbtn.value = sug_answers[x].title;
+            newbtn.addEventListener("click", function (event) {
+                var btnValue = event.target.value;
+
+                var newItem_oc = document.createElement('div');
+                newItem_oc.className = ('outgoing-chats');
+                //user chat container background color
+                // newItem_oc.style.backgroundColor = '#ccffff';
+
+                var newItem_oc1 = document.createElement('div');
+                newItem_oc1.className = ('outgoing-chats-msg');
+                var para_oc = document.createElement('p');
+                //user chat bubble backgroundcolor
+                para_oc.style.backgroundColor = css.user_bubble_colour;
+                //user chat text color
+                para_oc.style.color = css.chat_user_font_colour;
+                
+
+                var span_oc = document.createElement('span');
+                span_oc.innerHTML = btnValue;
+                para_oc.appendChild(span_oc);
+                newItem_oc1.appendChild(para_oc);
+                newItem_oc.appendChild(newItem_oc1);
+
+                var newItem_oc2 = document.createElement('div');
+                newItem_oc2.className = ('outgoing-chats-img');
+                var userImg = "https://api.chatbot.roundsqr.net/" + css.user_logo;
+                newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
+                newItem_oc.appendChild(newItem_oc2);
+
+                newItem_oc.scrollTop = newItem_oc.scrollHeight;
+
+                responseContainer.appendChild(newItem_oc);
+                responseContainer.scrollTop = responseContainer.scrollHeight;
+
+                funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+
+            });
+            span.appendChild(newbtn);
+        }
+    } else {
+        for (var x = 0; x < sug_answers.length; x++) {
+            var newbtn = document.createElement('input');
+            newbtn.type = 'button';
+            newbtn.value = sug_answers[x].title;
+            newbtn.innerHTML = sug_answers[x].title;
+            newbtn.addEventListener("click", function (event) {
+                var btnValue = event.target.value;
+
+                var newItem_oc = document.createElement('div');
+                newItem_oc.className = ('outgoing-chats');
+                //user chat container background color
+                // newItem_oc.style.backgroundColor = '#ccffff';
 
 
-            var newItem_oc1 = document.createElement('div');
-            newItem_oc1.className = ('outgoing-chats-msg');
-            var para_oc = document.createElement('p');
-            //user chat bubble backgroundcolor
-            para_oc.style.backgroundColor = css.user_bubble_colour;
-            //user chat text color
-            para_oc.style.color = css.chat_user_font_colour;
+                var newItem_oc1 = document.createElement('div');
+                newItem_oc1.className = ('outgoing-chats-msg');
+                var para_oc = document.createElement('p');
+                //user chat bubble backgroundcolor
+                para_oc.style.backgroundColor = css.user_bubble_colour;
+                //user chat text color
+                para_oc.style.color = css.chat_user_font_colour;
 
 
 
-            var span_oc = document.createElement('span');
-            span_oc.innerHTML = btnValue;
-            para_oc.appendChild(span_oc);
-            newItem_oc1.appendChild(para_oc);
-            newItem_oc.appendChild(newItem_oc1);
+                var span_oc = document.createElement('span');
+                span_oc.innerHTML = btnValue;
+                para_oc.appendChild(span_oc);
+                newItem_oc1.appendChild(para_oc);
+                newItem_oc.appendChild(newItem_oc1);
 
-            var newItem_oc2 = document.createElement('div');
-            newItem_oc2.className = ('outgoing-chats-img');
-            var userImg = "https://api.chatbotdev.roundsqr.net/" + css.user_logo;
-            newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
-            newItem_oc.appendChild(newItem_oc2);
+                var newItem_oc2 = document.createElement('div');
+                newItem_oc2.className = ('outgoing-chats-img');
+                var userImg = "https://api.chatbotdev.roundsqr.net/" + css.user_logo;
+                newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
+                newItem_oc.appendChild(newItem_oc2);
 
-            newItem_oc.scrollTop = newItem_oc.scrollHeight;
+                newItem_oc.scrollTop = newItem_oc.scrollHeight;
 
-            responseContainer.appendChild(newItem_oc);
-            responseContainer.scrollTop = responseContainer.scrollHeight;
+                responseContainer.appendChild(newItem_oc);
+                responseContainer.scrollTop = responseContainer.scrollHeight;
 
-            funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+                funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
 
-        });
-        span.appendChild(newbtn);
+            });
+            span.appendChild(newbtn);
+        }
     }
 
     para.appendChild(span);
