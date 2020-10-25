@@ -196,9 +196,13 @@ function showResponse(ajaxResponse, response) {
     if(ajaxResponse[0].type == 'file') {
         
         for (var x = 0; x < sug_answers.length; x++) {
+            var imgItem = document.createElement('div');
+            imgItem.className = ('carousel-item');
             var newbtn = document.createElement('IMG');
+            newbtn.height = '120'
+            newbtn.width = '80'
             // newbtn.type = 'button';
-            newbtn.src = sug_answers[x].payload;
+            newbtn.src = "https://api.chatbotdev.roundsqr.net/" + sug_answers[x].payload;
             newbtn.value = sug_answers[x].title;
             newbtn.addEventListener("click", function (event) {
                 var btnValue = event.target.value;
