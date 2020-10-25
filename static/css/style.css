@@ -149,6 +149,13 @@ p {
     border: 0px
 } */
 
+#chat-box #inputs img {
+    margin: 5px;
+    /* border: 1px solid #000000 !important; */
+    background: #fff;
+    overflow-x: auto;
+}
+
 .received-chats .received-chats-img img,
 .outgoing-chats .outgoing-chats-img img,
 .received-chats-error .received-chats-img-error img,
