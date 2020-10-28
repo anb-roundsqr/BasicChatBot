@@ -1513,24 +1513,36 @@ class AssetsUploader(views.APIView):
         }
         try:
             fileName = asset.name
-            fileType = fileName.split('.')[-1]
+            fileType = fileName.split('.')[-1].lower()
             ASSET_DIR = ""
-            if asset_type == "image":
-                result["message"] = "only 'png', 'jpg', 'jpeg' files are allowed."
-                if fileType in ("png", "jpg", "jpeg"):
-                    ASSET_DIR = os.path.join(
-                        STATICFILES_DIRS[0],
-                        'images',
-                        'logos'
-                    )
-
-            elif asset_type == 'file':
-                result["message"] = "only 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
-                if fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
-                    ASSET_DIR = os.path.join(
-                        STATICFILES_DIRS[0],
-                        'documents'
-                    )
+            # if asset_type == "image":
+            #     result["message"] = "only 'png', 'jpg', 'jpeg' files are allowed."
+            #     if fileType in ("png", "jpg", "jpeg"):
+            #         ASSET_DIR = os.path.join(
+            #             STATICFILES_DIRS[0],
+            #             'images',
+            #             'logos'
+            #         )
+            #
+            # elif asset_type == 'file':
+            #     result["message"] = "only 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
+            #     if fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
+            #         ASSET_DIR = os.path.join(
+            #             STATICFILES_DIRS[0],
+            #             'documents'
+            #         )
+            result["message"] = "only 'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
+            if fileType in ("png", "jpg", "jpeg"):
+                ASSET_DIR = os.path.join(
+                    STATICFILES_DIRS[0],
+                    'images',
+                    'logos'
+                )
+            elif fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
+                ASSET_DIR = os.path.join(
+                    STATICFILES_DIRS[0],
+                    'documents'
+                )
             if ASSET_DIR:
                 if not os.path.exists(ASSET_DIR):
                     os.makedirs(ASSET_DIR)
