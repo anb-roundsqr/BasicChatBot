@@ -90,7 +90,7 @@ function funChatbox(text_msgs, ques_msg, response, sessionId) {
 function showResponse(ajaxResponse, response) {
     console.log(response);
     var seconds = new Date().getTime() / 1000;
-    console.log(seconds) 
+    console.log(seconds)
     var css = response.response;
     console.log(css.header_colour)
     var headerBlock = document.getElementById('mydiv');
@@ -183,7 +183,6 @@ function showResponse(ajaxResponse, response) {
     newItem21.style.color = css.chat_bot_font_colour;
     //bot chat bubble backgroundcolor
     newItem21.style.backgroundColor = css.bot_bubble_colour;
-
     var para = document.createElement('p');
 
 
@@ -191,19 +190,35 @@ function showResponse(ajaxResponse, response) {
     span.innerHTML = ajaxResponse[0].question;
     span.appendChild(linebreak);
 
+
     var sug_answers = ajaxResponse[0].suggested_answers;
 
-    if(ajaxResponse[0].type == 'file') {
+    if (ajaxResponse[0].type == 'file') {
+        var imgContainer = document.createElement('div');
+        imgContainer.className = 'mySlide';
+
+        var prevBtn = document.createElement('a');
+        prevBtn.innerHTML = '&#10094;';
+        prevBtn.className = 'prev';
+        prevBtn.addEventListener("click", function (event) { plusSlides(event, -1, sug_answers.length) });
+        imgContainer.appendChild(prevBtn);
+        var nxtBtn = document.createElement('a');
+        nxtBtn.innerHTML = '&#10095;';
+        nxtBtn.className = 'next';
+        nxtBtn.addEventListener("click", function (event) { plusSlides(event, 1, sug_answers.length) });
         
+
         for (var x = 0; x < sug_answers.length; x++) {
-            var imgItem = document.createElement('div');
-            imgItem.className = ('carousel-item');
+            var imgBox = document.createElement('div');
+            imgBox.className = 'myBox';
+
             var newbtn = document.createElement('IMG');
-            newbtn.height = '120'
-            newbtn.width = '80'
             // newbtn.type = 'button';
+            console.log(sug_answers[x].payload);
             newbtn.src = "https://api.chatbotdev.roundsqr.net/" + sug_answers[x].payload;
             newbtn.value = sug_answers[x].title;
+            newbtn.height = '110'
+            newbtn.width = '78'
             newbtn.addEventListener("click", function (event) {
                 var btnValue = event.target.value;
 
@@ -219,7 +234,7 @@ function showResponse(ajaxResponse, response) {
                 para_oc.style.backgroundColor = css.user_bubble_colour;
                 //user chat text color
                 para_oc.style.color = css.chat_user_font_colour;
-                
+
 
                 var span_oc = document.createElement('span');
                 span_oc.innerHTML = btnValue;
@@ -241,9 +256,19 @@ function showResponse(ajaxResponse, response) {
                 funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
 
             });
-            span.appendChild(newbtn);
+            
+            imgBox.append(newbtn);
+            
+            imgContainer.appendChild(imgBox)
+            imgContainer.appendChild(nxtBtn);
+            span.appendChild(imgContainer);
         }
+        setTimeout(() => {
+            plusSlides(null, 1, sug_answers.length);
+        }, 500);;
+
     } else {
+
         for (var x = 0; x < sug_answers.length; x++) {
             var newbtn = document.createElement('input');
             newbtn.type = 'button';
@@ -289,11 +314,12 @@ function showResponse(ajaxResponse, response) {
 
             });
             span.appendChild(newbtn);
+
         }
     }
 
-    para.appendChild(span);
 
+    para.appendChild(span);
     newItem21.appendChild(para);
     newItem2.appendChild(newItem21);
     newItem.appendChild(newItem2);
@@ -477,5 +503,25 @@ async function funTextMsg() {
         funChatbox('', '', response, sessionIdGlobal);
     } else {
         alert("Please enter your Text Message.")
+    }
+}
+
+var imagesPerSlide = 3;
+var slideIndex = 1;
+function plusSlides(event, side, totalImgs) {
+    var allIndexes = [];
+    var slides = document.getElementsByClassName("myBox");
+    for (var i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+        allIndexes.push(i);
+    }
+    slideIndex++;
+    if (slideIndex > Math.ceil(slides.length / imagesPerSlide)) { slideIndex = 1 }
+    slidesToShow = allIndexes.slice((slideIndex - 1) * imagesPerSlide, slideIndex * imagesPerSlide);
+
+    for (var i = 0; i < slides.length; i++) {
+        if (slidesToShow.some(item => item == i)) {
+            slides[i].style.display = "inline-block";
+        }
     }
 }
