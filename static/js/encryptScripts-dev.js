@@ -20,11 +20,11 @@
     document.head.appendChild(jScript);
 
 
-    // var link1 = document.createElement("LINK");
-    // link1.setAttribute("rel", "stylesheet");
-    // link1.setAttribute("type", "text/css");
-    // link1.setAttribute("href", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css");
-    // document.head.appendChild(link1);
+    var link1 = document.createElement("LINK");
+    link1.setAttribute("rel", "stylesheet");
+    link1.setAttribute("type", "text/css");
+    link1.setAttribute("href", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css");
+    document.head.appendChild(link1);
 
     var link2 = document.createElement("LINK");
     link2.setAttribute("rel", "stylesheet");
