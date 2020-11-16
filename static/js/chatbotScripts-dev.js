@@ -506,22 +506,35 @@ async function funTextMsg() {
     }
 }
 
-var imagesPerSlide = 3;
+// var imagesPerSlide = 3;
+// var slideIndex = 1;
+// function plusSlides(event, side, totalImgs) {
+//     var allIndexes = [];
+//     var slides = document.getElementsByClassName("myBox");
+//     for (var i = 0; i < slides.length; i++) {
+//         slides[i].style.display = "none";
+//         allIndexes.push(i);
+//     }
+//     slideIndex++;
+//     if (slideIndex > Math.ceil(slides.length / imagesPerSlide)) { slideIndex = 1 }
+//     slidesToShow = allIndexes.slice((slideIndex - 1) * imagesPerSlide, slideIndex * imagesPerSlide);
+
+//     for (var i = 0; i < slides.length; i++) {
+//         if (slidesToShow.some(item => item == i)) {
+//             slides[i].style.display = "inline-block";
+//         }
+//     }
+// }
+
+var imagesPerSlide = 3;    
 var slideIndex = 1;
 function plusSlides(event, side, totalImgs) {
-    var allIndexes = [];
+    debugger;
     var slides = document.getElementsByClassName("myBox");
     for (var i = 0; i < slides.length; i++) {
         slides[i].style.display = "none";
-        allIndexes.push(i);
-    }
-    slideIndex++;
-    if (slideIndex > Math.ceil(slides.length / imagesPerSlide)) { slideIndex = 1 }
-    slidesToShow = allIndexes.slice((slideIndex - 1) * imagesPerSlide, slideIndex * imagesPerSlide);
-
-    for (var i = 0; i < slides.length; i++) {
-        if (slidesToShow.some(item => item == i)) {
-            slides[i].style.display = "inline-block";
-        }
-    }
+     }
+     slideIndex++;
+     if (slideIndex > slides.length) {slideIndex = 1}
+     slides[slideIndex-1].style.display = "block";
 }
