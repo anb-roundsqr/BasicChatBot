@@ -12,7 +12,7 @@ class CustomerBotAdmin(admin.ModelAdmin):
     def bot_name(self, obj):
         return obj.bot.name
 
-    list_display = ('customer_name', 'bot_name', 'source_url')
+    list_display = ('source_url', 'customer_name', 'bot_name')
     search_fields = ('source_url',)
 
 
