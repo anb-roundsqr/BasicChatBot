@@ -630,9 +630,11 @@ class BotProperties(views.APIView):
             "status": "failed"
         }
         try:
-            if request.query_params["source_url"]:
-                queryset = CustomerBots.objects.all()
-                bot = get_object_or_404(queryset, source_url=request.query_params["source_url"])
+            # if request.query_params["source_url"]:
+            #     queryset = CustomerBots.objects.all()
+            #     bot = get_object_or_404(queryset, source_url=request.query_params["source_url"])
+            if request.GET.get("source_url"):
+                bot = CustomerBots.objects.get(source_url=request.GET.get("source_url"))
                 serializer_context = {
                     'request': request,
                 }
@@ -1043,7 +1045,7 @@ class ClientForm(views.APIView):
         try:
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
-            customer_bot = CustomerBots.objects.get(source_url=source_url)
+            customer_bot = CustomerBots.objects.get(source_url__iexact=source_url)
             result = ClientConfiguration().retrieve_sections(customer_bot.customer_id, customer_bot.bot_id)
             if result["status"] == "success":
                 errors = []
