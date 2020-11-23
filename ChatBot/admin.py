@@ -16,7 +16,7 @@ class BotConfigurationAdmin(admin.ModelAdmin):
     search_fields = ('question',)
 
 
-admin.site.register(BotConfiguration)
+admin.site.register(BotConfiguration, BotConfigurationAdmin)
 
 
 class CustomerBotAdmin(admin.ModelAdmin):
