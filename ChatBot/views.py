@@ -1150,10 +1150,10 @@ class ClientForm(views.APIView):
                                        ] == next_question
                                 ][0]
                                 if submitted_question["answer_type"] == "TEXT":
-                                    contains_digit = any(map(str.isdigit, bot_info["text"]))
+                                    contains_digit = True  # Todo any(map(str.isdigit, bot_info["text"]))
                                     print('contains_digit', contains_digit)
                                     regex = re.compile(r'[@_!#$%^&*()<>?/\|}{~:]')
-                                    contains_specials = regex.search(bot_info["text"])
+                                    contains_specials = True  # Todo regex.search(bot_info["text"])
                                     print('contains_specials', contains_specials)
                                     contains_email = re.match(
                                         r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
