@@ -1689,8 +1689,10 @@ class Login(views.APIView):
         try:
             try:
                 username = request.data['username']
+                is_mobile = False
             except:
                 username = request.data['mobile']
+                is_mobile = True
             password = base64.b64encode(bytes(
                 request.data['password'].encode()
             )).decode()
@@ -1700,10 +1702,16 @@ class Login(views.APIView):
             else:
                 user_model = Customers
                 user_model_str = 'Customers'
-            user = user_model.objects.filter(
-                mobile=username,
-                password=password
-            )
+            if is_mobile:
+                user = user_model.objects.filter(
+                    mobile=username,
+                    password=password
+                )
+            else:
+                user = user_model.objects.filter(
+                    email_id=username,
+                    password=password
+                )
             if not user:
                 result.update({"message": "Invalid Credentials"})
             else:
