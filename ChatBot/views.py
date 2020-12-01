@@ -1687,7 +1687,10 @@ class Login(views.APIView):
             "response": {}
         }
         try:
-            username = request.data['mobile']
+            try:
+                username = request.data['username']
+            except:
+                username = request.data['mobile']
             password = base64.b64encode(bytes(
                 request.data['password'].encode()
             )).decode()
