@@ -15,38 +15,26 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path, include
-from ChatBot.views import (
-    ClientConfiguration,
-    CustomerViewSet,
-    BotViewSet,
-    CustomerBotViewSet,
-    ClientForm,
-    BotProperties,
-    Analytics,
-    AssetsUploader,
-    register_admin,
-    Logout,
-    Login,
-    ForgotPassword,
-)
+from ChatBot import views as vu
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
-router.register(r'customers', CustomerViewSet, basename='customers')
-router.register(r'bots', BotViewSet, basename='bots')
-router.register(r'customerbots', CustomerBotViewSet, basename='customerbots')
+router.register(r'customers', vu.CustomerViewSet, basename='customers')
+router.register(r'bots', vu.BotViewSet, basename='bots')
+router.register(r'customerbots', vu.CustomerBotViewSet, basename='customerbots')
 
 urlpatterns = [
     path(r'', include(router.urls)),
     path('admin/', admin.site.urls),
-    path('admin/create', register_admin),
-    path('admin/forgot-password', ForgotPassword.as_view()),
-    path('forgot-password', ForgotPassword.as_view()),
-    re_path(r'client-config', ClientConfiguration.as_view()),
-    re_path(r'bot-properties$', BotProperties.as_view()),
-    re_path(r'client-form', ClientForm.as_view()),
-    re_path(r'analytics/(?P<slug>[\w-]+)', Analytics.as_view()),
-    re_path(r'assets/(?P<slug>[\w-]+)', AssetsUploader.as_view()),
-    re_path(r'(?P<slug>[\w-]+)/login', Login.as_view()),
-    re_path(r'(?P<slug>[\w-]+)/logout', Logout.as_view()),
+    path('admin/create', vu.register_admin),
+    path('admin/forgot-password', vu.ForgotPassword.as_view()),
+    path('forgot-password', vu.ForgotPassword.as_view()),
+    re_path(r'client-config', vu.ClientConfiguration.as_view()),
+    re_path(r'bot-properties$', vu.BotProperties.as_view()),
+    re_path(r'client-form', vu.ClientForm.as_view()),
+    re_path(r'analytics/(?P<slug>[\w-]+)', vu.Analytics.as_view()),
+    re_path(r'assets/(?P<slug>[\w-]+)', vu.AssetsUploader.as_view()),
+    re_path(r'(?P<slug>[\w-]+)/login', vu.Login.as_view()),
+    re_path(r'(?P<slug>[\w-]+)/logout', vu.Logout.as_view()),
+    path('customer/signup', vu.ClientSignup.as_view()),
 ]

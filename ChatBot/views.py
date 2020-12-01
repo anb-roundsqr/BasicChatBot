@@ -53,6 +53,8 @@ import string
 import base64
 import jwt
 import uuid
+from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import IsAuthenticated
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -1929,3 +1931,17 @@ class ForgotPassword(views.APIView):
                 "email": ["Invalid `%s` value." % email_id]
             })
         return email_id
+
+
+class ClientSignup(CreateAPIView):
+    queryset = Customers.objects.all()
+    serializer_class = CustomerCreateSerializer
+
+    def perform_create(self, serializer):
+        res = serializer.save()
+        characters = string.ascii_letters + string.digits
+        raw_password = "".join(choice(characters) for x in range(randint(8, 16)))
+        raw_password = self.request.data['password'] if 'password' in self.request.data else raw_password
+        password = base64.b64encode(bytes(raw_password.encode())).decode()
+        res.password = password
+        res.save()
