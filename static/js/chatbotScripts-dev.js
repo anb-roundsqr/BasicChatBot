@@ -199,12 +199,12 @@ function showResponse(ajaxResponse, response) {
 
         var prevBtn = document.createElement('a');
         prevBtn.innerHTML = '&#10094;';
-        prevBtn.className = 'prev';
+        prevBtn.className = 'rsq_prev';
         prevBtn.addEventListener("click", function (event) { plusSlides(event, -1, sug_answers.length) });
         imgContainer.appendChild(prevBtn);
         var nxtBtn = document.createElement('a');
         nxtBtn.innerHTML = '&#10095;';
-        nxtBtn.className = 'next';
+        nxtBtn.className = 'rsq_next';
         nxtBtn.addEventListener("click", function (event) { plusSlides(event, 1, sug_answers.length) });
         
 
