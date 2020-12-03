@@ -93,14 +93,14 @@ function showResponse(ajaxResponse, response) {
     console.log(seconds)
     var css = response.response;
     console.log(css.header_colour)
-    var headerBlock = document.getElementById('mydiv');
+    var headerBlock = document.getElementById('rsq_mydiv');
     headerBlock.style.background = css.header_colour;
 
     var headerText = document.getElementsByTagName("h4");
     headerText[0].style.color = css.header_colour;
     headerText[0].innerHTML = "Chat with us now!";
 
-    var headerContainer = document.querySelector('#icon');
+    var headerContainer = document.querySelector('#rsq_icon');
     // headerContainer.style.backgroundColor = '#ccffff';
     var newIcon = document.createElement('div');
     newIcon.className = ('chats-logo');
@@ -506,35 +506,22 @@ async function funTextMsg() {
     }
 }
 
-// var imagesPerSlide = 3;
-// var slideIndex = 1;
-// function plusSlides(event, side, totalImgs) {
-//     var allIndexes = [];
-//     var slides = document.getElementsByClassName("myBox");
-//     for (var i = 0; i < slides.length; i++) {
-//         slides[i].style.display = "none";
-//         allIndexes.push(i);
-//     }
-//     slideIndex++;
-//     if (slideIndex > Math.ceil(slides.length / imagesPerSlide)) { slideIndex = 1 }
-//     slidesToShow = allIndexes.slice((slideIndex - 1) * imagesPerSlide, slideIndex * imagesPerSlide);
-
-//     for (var i = 0; i < slides.length; i++) {
-//         if (slidesToShow.some(item => item == i)) {
-//             slides[i].style.display = "inline-block";
-//         }
-//     }
-// }
-
-var imagesPerSlide = 3;    
+var imagesPerSlide = 3;
 var slideIndex = 1;
 function plusSlides(event, side, totalImgs) {
-    debugger;
+    var allIndexes = [];
     var slides = document.getElementsByClassName("myBox");
     for (var i = 0; i < slides.length; i++) {
         slides[i].style.display = "none";
-     }
-     slideIndex++;
-     if (slideIndex > slides.length) {slideIndex = 1}
-     slides[slideIndex-1].style.display = "block";
+        allIndexes.push(i);
+    }
+    slideIndex++;
+    if (slideIndex > Math.ceil(slides.length / imagesPerSlide)) { slideIndex = 1 }
+    slidesToShow = allIndexes.slice((slideIndex - 1) * imagesPerSlide, slideIndex * imagesPerSlide);
+
+    for (var i = 0; i < slides.length; i++) {
+        if (slidesToShow.some(item => item == i)) {
+            slides[i].style.display = "inline-block";
+        }
+    }
 }

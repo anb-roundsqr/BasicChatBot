@@ -45,13 +45,13 @@
     // Start polling...
     checkReady(function($) {
         $(document).ready(function () {
-            $('#box').on('click', function () {
-                $('#chat-box').fadeIn(400);
+            $('#rsq_box').on('click', function () {
+                $('#rsq_chat-box').fadeIn(400);
                 $(this).fadeOut(100);
             });
-            $('#chat-box #minimize').on('click', function () {
-                $('#chat-box').slideUp(600);
-                $('#box').fadeIn(400);
+            $('#rsq_chat-box #rsq_minimize').on('click', function () {
+                $('#rsq_chat-box').slideUp(600);
+                $('#rsq_box').fadeIn(400);
             });
         });
     })
