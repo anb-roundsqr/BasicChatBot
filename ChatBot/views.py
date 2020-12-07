@@ -1573,6 +1573,12 @@ class AssetsUploader(views.APIView):
 class Analytics(views.APIView):
 
     def get(self, request, **kwargs):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
 
         result = {
             "message": "Value required for 'days_count' field.",
@@ -1593,7 +1599,7 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def process_metrics(self, days_count, grpah_type):
+    def process_metrics(self, days_count, graph_type):
 
         result = {
             "message": "",
@@ -1789,8 +1795,8 @@ class TokenAuthentication(authentication.BaseAuthentication):
 
     model = None
 
-    def get_model(self):
-        return Users
+    # def get_model(self):
+    #     return Users
 
     def authenticate(self, request):
         auth = authentication.get_authorization_header(request).split()
@@ -1956,3 +1962,49 @@ class ClientSignup(CreateAPIView):
         password = base64.b64encode(bytes(raw_password.encode())).decode()
         res.password = password
         res.save()
+
+
+class ChangePassword(views.APIView):
+
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        data = request.data
+        context = {"flag": "success"}
+        if 'username' not in data or not data['username']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter username'
+        elif 'current_password' not in data or not data['current_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter current_password'
+
+        elif 'new_password' not in data or not data['new_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter new_password'
+
+        elif 'confirm_password' not in data or not data['confirm_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter confirm_password'
+
+        elif not data['new_password'] == data['confirm_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Password did not match'
+
+        if context['flag'] == 'error':
+            return response.Response(context, status=400)
+
+        try:
+            pwd = base64.b64encode(bytes(data['current_password'].encode())).decode()
+            user = Customers.objects.filter(email_id=data['username'], password=pwd)[0]
+        except Exception as e:
+            context['flag'] = "error"
+            context['message'] = str(e)
+            return response.Response(context, status=400)
+        user.password = base64.b64encode(bytes(data['new_password'].encode())).decode()
+        user.save()
+        context['message'] = "Password changed successfully."
+        return response.Response(context, status=200)
