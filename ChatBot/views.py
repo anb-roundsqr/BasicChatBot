@@ -1746,6 +1746,7 @@ class Login(views.APIView):
                     "is_pwd_updated": user[0].is_password_updated,
                     "user_id": user[0].id,
                     "user_name": user[0].name,
+                    "first_login": False if is_mobile else not user[0].is_active
                 })
         except KeyError as e:
             result.update({
@@ -1911,6 +1912,8 @@ class ForgotPassword(views.APIView):
                     email_id=email_id,
                     is_deleted=False
                 )
+                customer.is_active = False
+                customer.save()
                 org_name = customer.org_name
                 context["point_of_contact"] = customer.name
                 context["password"] = base64.b64decode(
@@ -1961,6 +1964,7 @@ class ClientSignup(CreateAPIView):
         raw_password = self.request.data['password'] if 'password' in self.request.data else raw_password
         password = base64.b64encode(bytes(raw_password.encode())).decode()
         res.password = password
+        res.is_active = False
         res.save()
 
 
@@ -2005,6 +2009,7 @@ class ChangePassword(views.APIView):
             context['message'] = str(e)
             return response.Response(context, status=400)
         user.password = base64.b64encode(bytes(data['new_password'].encode())).decode()
+        user.is_active = True
         user.save()
         context['message'] = "Password changed successfully."
         return response.Response(context, status=200)
