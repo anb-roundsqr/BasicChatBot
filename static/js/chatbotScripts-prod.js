@@ -93,14 +93,14 @@ function showResponse(ajaxResponse, response) {
     console.log(seconds) 
     var css = response.response;
     console.log(css.header_colour)
-    var headerBlock = document.getElementById('mydiv');
+    var headerBlock = document.getElementById('rsq_mydiv');
     headerBlock.style.background = css.header_colour;
 
     var headerText = document.getElementsByTagName("h4");
     headerText[0].style.color = css.header_colour;
     headerText[0].innerHTML = "Chat with us now!";
 
-    var headerContainer = document.querySelector('#icon');
+    var headerContainer = document.querySelector('#rsq_icon');
     // headerContainer.style.backgroundColor = '#ccffff';
     var newIcon = document.createElement('div');
     newIcon.className = ('chats-logo');
@@ -192,13 +192,90 @@ function showResponse(ajaxResponse, response) {
     span.appendChild(linebreak);
 
     var sug_answers = ajaxResponse[0].suggested_answers;
-    for (var x = 0; x < sug_answers.length; x++) {
-        var newbtn = document.createElement('input');
-        newbtn.type = 'button';
-        newbtn.value = sug_answers[x].payload;
-        newbtn.innerHTML = sug_answers[x].title;
-        newbtn.addEventListener("click", function (event) {
-            var btnValue = event.target.value;
+
+    if (ajaxResponse[0].type == 'file') {
+        var imgContainer = document.createElement('div');
+        imgContainer.className = 'mySlide';
+
+        var prevBtn = document.createElement('a');
+        prevBtn.innerHTML = '&#10094;';
+        prevBtn.className = 'rsq_prev';
+        prevBtn.addEventListener("click", function (event) { plusSlides(event, -1, sug_answers.length) });
+        imgContainer.appendChild(prevBtn);
+        var nxtBtn = document.createElement('a');
+        nxtBtn.innerHTML = '&#10095;';
+        nxtBtn.className = 'rsq_next';
+        nxtBtn.addEventListener("click", function (event) { plusSlides(event, 1, sug_answers.length) });
+
+
+        for (var x = 0; x < sug_answers.length; x++) {
+            var imgBox = document.createElement('div');
+            imgBox.className = 'myBox';
+
+            var newbtn = document.createElement('IMG');
+            // newbtn.type = 'button';
+            console.log(sug_answers[x].payload);
+            newbtn.src = "https://api.chatbot.roundsqr.net/" + sug_answers[x].payload;
+            newbtn.value = sug_answers[x].title;
+            newbtn.height = '110'
+            newbtn.width = '78'
+            newbtn.addEventListener("click", function (event) {
+                var btnValue = event.target.value;
+
+                var newItem_oc = document.createElement('div');
+                newItem_oc.className = ('outgoing-chats');
+                //user chat container background color
+                // newItem_oc.style.backgroundColor = '#ccffff';
+
+                var newItem_oc1 = document.createElement('div');
+                newItem_oc1.className = ('outgoing-chats-msg');
+                var para_oc = document.createElement('p');
+                //user chat bubble backgroundcolor
+                para_oc.style.backgroundColor = css.user_bubble_colour;
+                //user chat text color
+                para_oc.style.color = css.chat_user_font_colour;
+
+
+                var span_oc = document.createElement('span');
+                span_oc.innerHTML = btnValue;
+                para_oc.appendChild(span_oc);
+                newItem_oc1.appendChild(para_oc);
+                newItem_oc.appendChild(newItem_oc1);
+
+                var newItem_oc2 = document.createElement('div');
+                newItem_oc2.className = ('outgoing-chats-img');
+                var userImg = "https://api.chatbot.roundsqr.net/" + css.user_logo;
+                newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
+                newItem_oc.appendChild(newItem_oc2);
+
+                newItem_oc.scrollTop = newItem_oc.scrollHeight;
+
+                responseContainer.appendChild(newItem_oc);
+                responseContainer.scrollTop = responseContainer.scrollHeight;
+
+                funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+
+            });
+
+            imgBox.append(newbtn);
+
+            imgContainer.appendChild(imgBox)
+            imgContainer.appendChild(nxtBtn);
+            span.appendChild(imgContainer);
+        }
+        setTimeout(() => {
+            plusSlides(null, 1, sug_answers.length);
+        }, 500);;
+
+    } else {
+
+        for (var x = 0; x < sug_answers.length; x++) {
+            var newbtn = document.createElement('input');
+            newbtn.type = 'button';
+            newbtn.value = sug_answers[x].title;
+            newbtn.innerHTML = sug_answers[x].title;
+            newbtn.addEventListener("click", function (event) {
+                var btnValue = event.target.value;
 
             var newItem_oc = document.createElement('div');
             newItem_oc.className = ('outgoing-chats');
@@ -237,6 +314,7 @@ function showResponse(ajaxResponse, response) {
 
         });
         span.appendChild(newbtn);
+        }
     }
 
     para.appendChild(span);
@@ -424,5 +502,25 @@ async function funTextMsg() {
         funChatbox('', '', response, sessionIdGlobal);
     } else {
         alert("Please enter your Text Message.")
+    }
+}
+
+var imagesPerSlide = 3;
+var slideIndex = 1;
+function plusSlides(event, side, totalImgs) {
+    var allIndexes = [];
+    var slides = document.getElementsByClassName("myBox");
+    for (var i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+        allIndexes.push(i);
+    }
+    slideIndex++;
+    if (slideIndex > Math.ceil(slides.length / imagesPerSlide)) { slideIndex = 1 }
+    slidesToShow = allIndexes.slice((slideIndex - 1) * imagesPerSlide, slideIndex * imagesPerSlide);
+
+    for (var i = 0; i < slides.length; i++) {
+        if (slidesToShow.some(item => item == i)) {
+            slides[i].style.display = "inline-block";
+        }
     }
 }
