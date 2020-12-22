@@ -53,6 +53,8 @@ import string
 import base64
 import jwt
 import uuid
+from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import IsAuthenticated
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -630,9 +632,11 @@ class BotProperties(views.APIView):
             "status": "failed"
         }
         try:
-            if request.query_params["source_url"]:
-                queryset = CustomerBots.objects.all()
-                bot = get_object_or_404(queryset, source_url=request.query_params["source_url"])
+            # if request.query_params["source_url"]:
+            #     queryset = CustomerBots.objects.all()
+            #     bot = get_object_or_404(queryset, source_url=request.query_params["source_url"])
+            if request.GET.get("source_url"):
+                bot = CustomerBots.objects.get(source_url=request.GET.get("source_url"))
                 serializer_context = {
                     'request': request,
                 }
@@ -1043,7 +1047,7 @@ class ClientForm(views.APIView):
         try:
             # bot_id = bot_info["bot_id"]
             source_url = bot_info["location"]
-            customer_bot = CustomerBots.objects.get(source_url=source_url)
+            customer_bot = CustomerBots.objects.get(source_url__iexact=source_url)
             result = ClientConfiguration().retrieve_sections(customer_bot.customer_id, customer_bot.bot_id)
             if result["status"] == "success":
                 errors = []
@@ -1095,9 +1099,9 @@ class ClientForm(views.APIView):
                             print("this is related question")
                             if len(sug_answers) > 0:
                                 print("current answer", bot_info["text"])
-                                if bot_info['text'] in sug_answers:
-                                    next_index = sug_answers.index(
-                                        bot_info['text'])
+                                ans_list = [ans['title'] for ans in sug_answers if 'title' in ans]
+                                if bot_info['text'] in ans_list:
+                                    next_index = ans_list.index(bot_info['text'])
                                     print('next_index', next_index)
                                     if isinstance(sug_jump, list):
                                         if next_index < len(sug_jump):
@@ -1220,8 +1224,8 @@ class ClientForm(views.APIView):
                     request.session.set_expiry(86400)
                 # print('questions', questions)
                 suggested_answers = [{
-                    "payload": sug_ans,
-                    "title": sug_ans
+                    "payload": sug_ans['payload'],
+                    "title": sug_ans['title'],
                 } for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
@@ -1229,6 +1233,7 @@ class ClientForm(views.APIView):
                     'question': next_question['question'],
                     'question_id': next_question['question_id'],
                     'answer_type': next_question['answer_type'],
+                    'type': 'file' if suggested_answers and 'payload' in suggested_answers[0] and 'static/' in suggested_answers[0]['payload'] else 'text',
                     'suggested_answers': suggested_answers,
                     'is_last_question': next_question["is_last_question"],
                     'sessionId': session_id
@@ -1512,24 +1517,36 @@ class AssetsUploader(views.APIView):
         }
         try:
             fileName = asset.name
-            fileType = fileName.split('.')[-1]
+            fileType = fileName.split('.')[-1].lower()
             ASSET_DIR = ""
-            if asset_type == "image":
-                result["message"] = "only 'png', 'jpg', 'jpeg' files are allowed."
-                if fileType in ("png", "jpg", "jpeg"):
-                    ASSET_DIR = os.path.join(
-                        STATICFILES_DIRS[0],
-                        'images',
-                        'logos'
-                    )
-
-            elif asset_type == 'file':
-                result["message"] = "only 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
-                if fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
-                    ASSET_DIR = os.path.join(
-                        STATICFILES_DIRS[0],
-                        'documents'
-                    )
+            # if asset_type == "image":
+            #     result["message"] = "only 'png', 'jpg', 'jpeg' files are allowed."
+            #     if fileType in ("png", "jpg", "jpeg"):
+            #         ASSET_DIR = os.path.join(
+            #             STATICFILES_DIRS[0],
+            #             'images',
+            #             'logos'
+            #         )
+            #
+            # elif asset_type == 'file':
+            #     result["message"] = "only 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
+            #     if fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
+            #         ASSET_DIR = os.path.join(
+            #             STATICFILES_DIRS[0],
+            #             'documents'
+            #         )
+            result["message"] = "only 'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx', 'xls' or 'xlsx' files are allowed."
+            if fileType in ("png", "jpg", "jpeg"):
+                ASSET_DIR = os.path.join(
+                    STATICFILES_DIRS[0],
+                    'images',
+                    'logos'
+                )
+            elif fileType in ('pdf', 'doc', 'docx', 'xls', 'xlsx'):
+                ASSET_DIR = os.path.join(
+                    STATICFILES_DIRS[0],
+                    'documents'
+                )
             if ASSET_DIR:
                 if not os.path.exists(ASSET_DIR):
                     os.makedirs(ASSET_DIR)
@@ -1556,6 +1573,12 @@ class AssetsUploader(views.APIView):
 class Analytics(views.APIView):
 
     def get(self, request, **kwargs):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
 
         result = {
             "message": "Value required for 'days_count' field.",
@@ -1576,7 +1599,7 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def process_metrics(self, days_count, grpah_type):
+    def process_metrics(self, days_count, graph_type):
 
         result = {
             "message": "",
@@ -1670,7 +1693,12 @@ class Login(views.APIView):
             "response": {}
         }
         try:
-            username = request.data['mobile']
+            try:
+                username = request.data['username']
+                is_mobile = False
+            except:
+                username = request.data['mobile']
+                is_mobile = True
             password = base64.b64encode(bytes(
                 request.data['password'].encode()
             )).decode()
@@ -1680,10 +1708,16 @@ class Login(views.APIView):
             else:
                 user_model = Customers
                 user_model_str = 'Customers'
-            user = user_model.objects.filter(
-                mobile=username,
-                password=password
-            )
+            if is_mobile:
+                user = user_model.objects.filter(
+                    mobile=username,
+                    password=password
+                )
+            else:
+                user = user_model.objects.filter(
+                    email_id=username,
+                    password=password
+                )
             if not user:
                 result.update({"message": "Invalid Credentials"})
             else:
@@ -1712,6 +1746,7 @@ class Login(views.APIView):
                     "is_pwd_updated": user[0].is_password_updated,
                     "user_id": user[0].id,
                     "user_name": user[0].name,
+                    "first_login": False if is_mobile else not user[0].is_active
                 })
         except KeyError as e:
             result.update({
@@ -1761,8 +1796,8 @@ class TokenAuthentication(authentication.BaseAuthentication):
 
     model = None
 
-    def get_model(self):
-        return Users
+    # def get_model(self):
+    #     return Users
 
     def authenticate(self, request):
         auth = authentication.get_authorization_header(request).split()
@@ -1877,6 +1912,8 @@ class ForgotPassword(views.APIView):
                     email_id=email_id,
                     is_deleted=False
                 )
+                customer.is_active = False
+                customer.save()
                 org_name = customer.org_name
                 context["point_of_contact"] = customer.name
                 context["password"] = base64.b64decode(
@@ -1914,3 +1951,65 @@ class ForgotPassword(views.APIView):
                 "email": ["Invalid `%s` value." % email_id]
             })
         return email_id
+
+
+class ClientSignup(CreateAPIView):
+    queryset = Customers.objects.all()
+    serializer_class = CustomerCreateSerializer
+
+    def perform_create(self, serializer):
+        res = serializer.save()
+        characters = string.ascii_letters + string.digits
+        raw_password = "".join(choice(characters) for x in range(randint(8, 16)))
+        raw_password = self.request.data['password'] if 'password' in self.request.data else raw_password
+        password = base64.b64encode(bytes(raw_password.encode())).decode()
+        res.password = password
+        res.is_active = False
+        res.save()
+
+
+class ChangePassword(views.APIView):
+
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        data = request.data
+        context = {"flag": "success"}
+        if 'username' not in data or not data['username']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter username'
+        elif 'current_password' not in data or not data['current_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter current_password'
+
+        elif 'new_password' not in data or not data['new_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter new_password'
+
+        elif 'confirm_password' not in data or not data['confirm_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Please enter confirm_password'
+
+        elif not data['new_password'] == data['confirm_password']:
+            context['flag'] = 'error'
+            context['message'] = 'Password did not match'
+
+        if context['flag'] == 'error':
+            return response.Response(context, status=400)
+
+        try:
+            pwd = base64.b64encode(bytes(data['current_password'].encode())).decode()
+            user = Customers.objects.filter(email_id=data['username'], password=pwd)[0]
+        except Exception as e:
+            context['flag'] = "error"
+            context['message'] = str(e)
+            return response.Response(context, status=400)
+        user.password = base64.b64encode(bytes(data['new_password'].encode())).decode()
+        user.is_active = True
+        user.save()
+        context['message'] = "Password changed successfully."
+        return response.Response(context, status=200)
