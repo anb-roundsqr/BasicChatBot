@@ -87,7 +87,7 @@ class CustomerBots(models.Model):
     bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
     customer_id_text = models.TextField(max_length=100, null=False, unique=True)
     bot_id_text = models.TextField(max_length=150, null=False)
-    source_url = models.TextField(null=False)
+    source_url = models.TextField(unique=True)
     BOT_TYPE = Choices(
         ('BASIC', 'basic', _('BASIC')),
         ('POWER', 'power', _('POWER')),
