@@ -2,7 +2,7 @@ from .settings_base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '3.19.220.112', 'api.chatbotdev.roundsqr.net']
+ALLOWED_HOSTS = ['3.19.204.159', 'api.chatbot.roundsqr.net']
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
@@ -26,7 +26,5 @@ DATABASES = {
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = (
-    'http://app.chatbotdev.roundsqr.net',
-    'http://localhost:3000',
+    'http://app.chatbot.roundsqr.net',
 )
-

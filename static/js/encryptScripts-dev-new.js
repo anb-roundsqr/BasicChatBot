@@ -1,16 +1,16 @@
-// Anonymous "self-invoking" function
+
 (function() {
     var startingTime = new Date().getTime();
     // Load the script
     var script = document.createElement('script');
-    script.src = 'https://api.chatbot.roundsqr.net/static/js/chatbotScripts-prod.js';
+    script.src = 'https://api.chatbotdev.roundsqr.net/static/js/chatbotScripts-dev.js';
     script.type = 'text/javascript';
     document.getElementsByTagName('head')[0].appendChild(script);
 
     var link = document.createElement("LINK");
     link.setAttribute("rel", "stylesheet");
     link.setAttribute("type", "text/css");
-    link.setAttribute("href", "https://api.chatbot.roundsqr.net/static/css/style.css");
+    link.setAttribute("href", "https://api.chatbotdev.roundsqr.net/static/css/style.css");
     document.head.appendChild(link);
 
     var jScript = document.createElement("script");
@@ -20,11 +20,11 @@
     document.head.appendChild(jScript);
 
 
-    var link1 = document.createElement("LINK");
-    link1.setAttribute("rel", "stylesheet");
-    link1.setAttribute("type", "text/css");
-    link1.setAttribute("href", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css");
-    document.head.appendChild(link1);
+    // var link1 = document.createElement("LINK");
+    // link1.setAttribute("rel", "stylesheet");
+    // link1.setAttribute("type", "text/css");
+    // link1.setAttribute("href", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css");
+    // document.head.appendChild(link1);
 
     var link2 = document.createElement("LINK");
     link2.setAttribute("rel", "stylesheet");

@@ -356,7 +356,7 @@ async function funTextMsg() {
         newItem_oc.appendChild(newItem_oc1);
 
         var newItem_oc2 = document.createElement('div');
-        newItem_oc2.className = ('outgoing-chats-img'); 
+        newItem_oc2.className = ('outgoing-chats-img');
         var userImg = "http://18.221.57.172/"+css.user_logo;
         newItem_oc2.innerHTML = ('<img src= '+userImg+'>');
         newItem_oc.appendChild(newItem_oc2);

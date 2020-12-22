@@ -7,7 +7,7 @@ function onLoad() {
 }
 
 async function funCss(location_Url) {
-    var Url = "https://api.chatbot.roundsqr.net/bot-properties?source_url=";
+    var Url = "https://api.chatbotdev.roundsqr.net/bot-properties?source_url=";
     var params = location_Url;
 
     try {
@@ -63,7 +63,7 @@ function funChatbox(text_msgs, ques_msg, response, sessionId) {
         })
     function iprotocol(ip_sys) {
 
-        var Url = "https://api.chatbot.roundsqr.net/client-form";
+        var Url = "https://api.chatbotdev.roundsqr.net/client-form";
         var xhr = new XMLHttpRequest();
         xhr.open('POST', Url, true);
         var data = JSON.stringify({
@@ -90,7 +90,7 @@ function funChatbox(text_msgs, ques_msg, response, sessionId) {
 function showResponse(ajaxResponse, response) {
     console.log(response);
     var seconds = new Date().getTime() / 1000;
-    console.log(seconds) 
+    console.log(seconds)
     var css = response.response;
     console.log(css.header_colour)
     var headerBlock = document.getElementById('rsq_mydiv');
@@ -104,7 +104,7 @@ function showResponse(ajaxResponse, response) {
     // headerContainer.style.backgroundColor = '#ccffff';
     var newIcon = document.createElement('div');
     newIcon.className = ('chats-logo');
-    var botLogo = "https://api.chatbot.roundsqr.net/" + css.bot_logo;
+    var botLogo = "https://api.chatbotdev.roundsqr.net/" + css.bot_logo;
     console.log(botLogo)
     newIcon.innerHTML = ('<img src= ' + botLogo + '>');
     // newIcon.appendChild(newIcon);
@@ -129,7 +129,7 @@ function showResponse(ajaxResponse, response) {
 
         var newItem1Error = document.createElement('div');
         newItem1Error.className = ('received-chats-img-error');
-        var botImgError = "https://api.chatbot.roundsqr.net/" + css.bot_logo;
+        var botImgError = "https://api.chatbotdev.roundsqr.net/" + css.bot_logo;
         console.log(botImgError)
         newItem1Error.innerHTML = ('<img src= ' + botImgError + '>');
         newItemError.appendChild(newItem1Error);
@@ -168,7 +168,7 @@ function showResponse(ajaxResponse, response) {
 
     var newItem1 = document.createElement('div');
     newItem1.className = ('received-chats-img');
-    var botImg = "https://api.chatbot.roundsqr.net/" + css.bot_logo;
+    var botImg = "https://api.chatbotdev.roundsqr.net/" + css.bot_logo;
     console.log(botImg)
     newItem1.innerHTML = ('<img src= ' + botImg + '>');
     newItem.appendChild(newItem1);
@@ -183,13 +183,13 @@ function showResponse(ajaxResponse, response) {
     newItem21.style.color = css.chat_bot_font_colour;
     //bot chat bubble backgroundcolor
     newItem21.style.backgroundColor = css.bot_bubble_colour;
-
     var para = document.createElement('p');
 
 
     var span = document.createElement('span');
     span.innerHTML = ajaxResponse[0].question;
     span.appendChild(linebreak);
+
 
     var sug_answers = ajaxResponse[0].suggested_answers;
 
@@ -206,7 +206,7 @@ function showResponse(ajaxResponse, response) {
         nxtBtn.innerHTML = '&#10095;';
         nxtBtn.className = 'rsq_next';
         nxtBtn.addEventListener("click", function (event) { plusSlides(event, 1, sug_answers.length) });
-
+        
 
         for (var x = 0; x < sug_answers.length; x++) {
             var imgBox = document.createElement('div');
@@ -215,7 +215,7 @@ function showResponse(ajaxResponse, response) {
             var newbtn = document.createElement('IMG');
             // newbtn.type = 'button';
             console.log(sug_answers[x].payload);
-            newbtn.src = "https://api.chatbot.roundsqr.net/" + sug_answers[x].payload;
+            newbtn.src = "https://api.chatbotdev.roundsqr.net/" + sug_answers[x].payload;
             newbtn.value = sug_answers[x].title;
             newbtn.height = '110'
             newbtn.width = '78'
@@ -256,9 +256,9 @@ function showResponse(ajaxResponse, response) {
                 funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
 
             });
-
+            
             imgBox.append(newbtn);
-
+            
             imgContainer.appendChild(imgBox)
             imgContainer.appendChild(nxtBtn);
             span.appendChild(imgContainer);
@@ -277,48 +277,49 @@ function showResponse(ajaxResponse, response) {
             newbtn.addEventListener("click", function (event) {
                 var btnValue = event.target.value;
 
-            var newItem_oc = document.createElement('div');
-            newItem_oc.className = ('outgoing-chats');
-            //user chat container background color
-            // newItem_oc.style.backgroundColor = '#ccffff';
+                var newItem_oc = document.createElement('div');
+                newItem_oc.className = ('outgoing-chats');
+                //user chat container background color
+                // newItem_oc.style.backgroundColor = '#ccffff';
 
 
-            var newItem_oc1 = document.createElement('div');
-            newItem_oc1.className = ('outgoing-chats-msg');
-            var para_oc = document.createElement('p');
-            //user chat bubble backgroundcolor
-            para_oc.style.backgroundColor = css.user_bubble_colour;
-            //user chat text color
-            para_oc.style.color = css.chat_user_font_colour;
+                var newItem_oc1 = document.createElement('div');
+                newItem_oc1.className = ('outgoing-chats-msg');
+                var para_oc = document.createElement('p');
+                //user chat bubble backgroundcolor
+                para_oc.style.backgroundColor = css.user_bubble_colour;
+                //user chat text color
+                para_oc.style.color = css.chat_user_font_colour;
 
 
 
-            var span_oc = document.createElement('span');
-            span_oc.innerHTML = btnValue;
-            para_oc.appendChild(span_oc);
-            newItem_oc1.appendChild(para_oc);
-            newItem_oc.appendChild(newItem_oc1);
+                var span_oc = document.createElement('span');
+                span_oc.innerHTML = btnValue;
+                para_oc.appendChild(span_oc);
+                newItem_oc1.appendChild(para_oc);
+                newItem_oc.appendChild(newItem_oc1);
 
-            var newItem_oc2 = document.createElement('div');
-            newItem_oc2.className = ('outgoing-chats-img');
-            var userImg = "https://api.chatbot.roundsqr.net/" + css.user_logo;
-            newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
-            newItem_oc.appendChild(newItem_oc2);
+                var newItem_oc2 = document.createElement('div');
+                newItem_oc2.className = ('outgoing-chats-img');
+                var userImg = "https://api.chatbotdev.roundsqr.net/" + css.user_logo;
+                newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
+                newItem_oc.appendChild(newItem_oc2);
 
-            newItem_oc.scrollTop = newItem_oc.scrollHeight;
+                newItem_oc.scrollTop = newItem_oc.scrollHeight;
 
-            responseContainer.appendChild(newItem_oc);
-            responseContainer.scrollTop = responseContainer.scrollHeight;
+                responseContainer.appendChild(newItem_oc);
+                responseContainer.scrollTop = responseContainer.scrollHeight;
 
-            funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+                funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
 
-        });
-        span.appendChild(newbtn);
+            });
+            span.appendChild(newbtn);
+
         }
     }
 
-    para.appendChild(span);
 
+    para.appendChild(span);
     newItem21.appendChild(para);
     newItem2.appendChild(newItem21);
     newItem.appendChild(newItem2);
@@ -358,7 +359,7 @@ async function SaveFile(res) {
     formData.append("asset", file);
 
     try {
-        let r = await fetch('https://api.chatbot.roundsqr.net/assets/file', { method: "POST", body: formData })
+        let r = await fetch('https://api.chatbotdev.roundsqr.net/assets/file', { method: "POST", body: formData })
             .then(response => response.text())
             .then(data =>
                 response = JSON.parse(data));
@@ -375,7 +376,7 @@ async function SaveFile(res) {
 }
 
 async function funFileMsg(textmsg, filePath) {
-    var Url = "https://api.chatbot.roundsqr.net/bot-properties?source_url=";
+    var Url = "https://api.chatbotdev.roundsqr.net/bot-properties?source_url=";
     var params = window.location.href;
     var css;
 
@@ -418,7 +419,7 @@ async function funFileMsg(textmsg, filePath) {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "https://api.chatbot.roundsqr.net/" + css.user_logo;
+        var userImg = "https://api.chatbotdev.roundsqr.net/" + css.user_logo;
         newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
         newItem_oc.appendChild(newItem_oc2);
 
@@ -443,7 +444,7 @@ function doit_onkeypress(event) {
 }
 
 async function funTextMsg() {
-    var Url = "https://api.chatbot.roundsqr.net/bot-properties?source_url=";
+    var Url = "https://api.chatbotdev.roundsqr.net/bot-properties?source_url=";
     var params = window.location.href;
     var css;
 
@@ -490,7 +491,7 @@ async function funTextMsg() {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "https://api.chatbot.roundsqr.net/" + css.user_logo;
+        var userImg = "https://api.chatbotdev.roundsqr.net/" + css.user_logo;
         newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
         newItem_oc.appendChild(newItem_oc2);
 
