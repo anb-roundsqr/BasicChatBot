@@ -40,6 +40,7 @@ from itertools import groupby
 # from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
+from django.db.models import Q
 from django.http.request import QueryDict
 from django.shortcuts import get_object_or_404
 import re
@@ -1585,10 +1586,12 @@ class Analytics(views.APIView):
             "status": "failed"
         }
         try:
-            days_count = 30
-            if "days_count" in request.query_params:
-                days_count = int(request.query_params["days_count"])
-            result.update(self.process_metrics(days_count, kwargs["slug"]))
+            days_count = int(request.query_params.get("days_count", 30))
+            slug = kwargs["slug"]
+            if slug == "session":
+                result.update(self.session_metrics(days_count, request.query_params["sender"]))
+            else:
+                result.update(self.chat_metrics(days_count, request.query_params["sender"]))
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -1599,7 +1602,60 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def process_metrics(self, days_count, graph_type):
+    def session_metrics(self, days_count, sender):
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            current_date = datetime.now(tz=timezone.utc)
+            start_date = current_date - timedelta(days=days_count)
+            print('current_date', current_date.date())
+            print('start_date', start_date.date())
+            actual_dates = []
+            for i in range(days_count):
+                actual_dates.append(
+                    datetime.strftime(
+                        start_date + timedelta(days=i),
+                        "%Y-%m-%d"
+                    )
+                )
+            print('actual_dates', actual_dates)
+            query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            if sender:
+                query &= Q(sender=sender)
+            sessions = Conversation.objects.filter(query).values('session_id').distinct()
+            sessions = json.loads(dumps(sessions))
+            result["message"] = "no graph data"
+            if sessions:
+                for session in sessions:
+                    session["name"] = time_stamp_to_date_format(
+                        session["time_stamp"]["$date"]
+                    ).split()[0]
+                    del session["time_stamp"]
+                graph_data = unique_and_count(sessions)
+                existed_dates = [record["name"] for record in graph_data]
+                print('existed_dates', existed_dates)
+                for ac_date in actual_dates:
+                    if ac_date not in existed_dates:
+                        graph_data.append({
+                            "name": ac_date,
+                            "value": 0
+                        })
+                graph_data.sort(key=lambda x: x['name'])
+                result.update({
+                    "message": "graph data",
+                    "status": "success",
+                    "response": graph_data
+                })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            print("exception")
+            result.update(exception_handler(e))
+        return result
+
+    def chat_metrics(self, days_count, sender):
 
         result = {
             "message": "",
@@ -1619,20 +1675,19 @@ class Analytics(views.APIView):
                     )
                 )
             print('actual_dates', actual_dates)
-            sessions = Conversation.objects.filter(
-                time_stamp__date__gte=start_date.date(),
-                time_stamp__date__lt=current_date.date()
-            ).values('time_stamp')
-            sessions = json.loads(dumps(sessions))
-            print('sessions', sessions)
+            query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            if sender:
+                query &= Q(sender=sender)
+            chats = Conversation.objects.filter(query).values('time_stamp')
+            chats = json.loads(dumps(chats))
             result["message"] = "no graph data"
-            if sessions:
-                for session in sessions:
-                    session["name"] = time_stamp_to_date_format(
-                        session["time_stamp"]["$date"]
+            if chats:
+                for chat in chats:
+                    chat["name"] = time_stamp_to_date_format(
+                        chat["time_stamp"]["$date"]
                     ).split()[0]
-                    del session["time_stamp"]
-                graph_data = unique_and_count(sessions)
+                    del chat["time_stamp"]
+                graph_data = unique_and_count(chats)
                 existed_dates = [record["name"] for record in graph_data]
                 print('existed_dates', existed_dates)
                 for ac_date in actual_dates:
