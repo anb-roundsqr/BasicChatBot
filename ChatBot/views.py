@@ -1587,7 +1587,7 @@ class Analytics(views.APIView):
         }
         try:
             days_count = int(request.query_params.get("days_count", 30))
-            sender = int(request.query_params.get("sender", ""))
+            sender = request.query_params.get("sender", "")
             slug = kwargs["slug"]
             if slug == "session":
                 result.update(self.session_metrics(days_count, sender))
