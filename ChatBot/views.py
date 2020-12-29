@@ -1587,11 +1587,12 @@ class Analytics(views.APIView):
         }
         try:
             days_count = int(request.query_params.get("days_count", 30))
+            sender = int(request.query_params.get("sender", ""))
             slug = kwargs["slug"]
             if slug == "session":
-                result.update(self.session_metrics(days_count, request.query_params["sender"]))
+                result.update(self.session_metrics(days_count, sender))
             else:
-                result.update(self.chat_metrics(days_count, request.query_params["sender"]))
+                result.update(self.chat_metrics(days_count, sender))
         except KeyError as e:
             result.update({
                 "message": "API Error",
