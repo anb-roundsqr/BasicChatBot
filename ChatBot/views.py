@@ -40,7 +40,7 @@ from itertools import groupby
 # from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http.request import QueryDict
 from django.shortcuts import get_object_or_404
 import re
@@ -1625,7 +1625,7 @@ class Analytics(views.APIView):
             query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
             if sender:
                 query &= Q(sender=sender)
-            sessions = Conversation.objects.filter(query).values('session_id').distinct()
+            sessions = Conversation.objects.filter(query).distinct('session_id').values('time_stamp')
             sessions = json.loads(dumps(sessions))
             result["message"] = "no graph data"
             if sessions:
