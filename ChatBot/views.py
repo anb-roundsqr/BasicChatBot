@@ -1591,6 +1591,8 @@ class Analytics(views.APIView):
             slug = kwargs["slug"]
             if slug == "session":
                 result.update(self.session_metrics(days_count, sender))
+            elif slug == "leads":
+                result.update(self.leads_metrics())
             else:
                 result.update(self.chat_metrics(days_count, sender))
         except KeyError as e:
@@ -1654,6 +1656,23 @@ class Analytics(views.APIView):
         except Exception as e:
             print("exception")
             result.update(exception_handler(e))
+        return result
+
+    def leads_metrics(self):
+        result = {
+            "message": "graph data",
+            "status": "success",
+            "leads": 800,
+            "companies": {
+                "worldwide": 500,
+                "Asia": 130,
+                "Africa": 90,
+                "North America": 80,
+                "South America": 40,
+                "Australia": 70,
+                "Europe": 90,
+            },
+        }
         return result
 
     def chat_metrics(self, days_count, sender):
