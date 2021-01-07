@@ -1605,7 +1605,7 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def session_metrics(self, days_count, sender):
+    def session_metrics(self, days_count, sender, status='completed'):
         result = {
             "message": "",
             "status": "failed"
@@ -1627,6 +1627,12 @@ class Analytics(views.APIView):
             query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
             if sender:
                 query &= Q(sender=sender)
+            questions = list(BotConfiguration.objects.all().filter(is_last_question=True).values_list('question', flat=True))
+            if status == 'completed':
+                query &= Q(text__in=questions)
+            elif status == 'incomplete':
+                conv = list(Conversation.objects.filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+                query &= ~Q(session_id__in=conv)
             sessions = Conversation.objects.filter(query).distinct('session_id').values('time_stamp')
             sessions = json.loads(dumps(sessions))
             result["message"] = "no graph data"
