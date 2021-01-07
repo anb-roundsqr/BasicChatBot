@@ -1587,10 +1587,11 @@ class Analytics(views.APIView):
         }
         try:
             days_count = int(request.query_params.get("days_count", 30))
+            status = int(request.query_params.get("status", 'all'))
             sender = request.query_params.get("sender", "")
             slug = kwargs["slug"]
             if slug == "session":
-                result.update(self.session_metrics(days_count, sender))
+                result.update(self.session_metrics(days_count, sender, status))
             elif slug == "leads":
                 result.update(self.leads_metrics())
             else:
@@ -1605,7 +1606,7 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def session_metrics(self, days_count, sender, status='completed'):
+    def session_metrics(self, days_count, sender, status):
         result = {
             "message": "",
             "status": "failed"
