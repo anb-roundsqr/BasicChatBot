@@ -40,7 +40,7 @@ from itertools import groupby
 # from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
-from django.db.models import Q, Count
+from django.db.models import Q, Value, CharField
 from django.http.request import QueryDict
 from django.shortcuts import get_object_or_404
 import re
@@ -1591,7 +1591,7 @@ class Analytics(views.APIView):
             sender = request.query_params.get("sender", "")
             slug = kwargs["slug"]
             if slug == "session":
-                result.update(self.session_metrics(days_count, sender, status))
+                result.update(self.session_metrics(days_count, sender))
             elif slug == "leads":
                 result.update(self.leads_metrics())
             else:
@@ -1606,7 +1606,7 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def session_metrics(self, days_count, sender, status):
+    def session_metrics(self, days_count, sender):
         result = {
             "message": "",
             "status": "failed"
@@ -1629,12 +1629,13 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             questions = list(BotConfiguration.objects.all().filter(is_last_question=True).values_list('question', flat=True))
-            if status == 'completed':
-                query &= Q(text__in=questions)
-            elif status == 'incomplete':
-                conv = list(Conversation.objects.filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
-                query &= ~Q(session_id__in=conv)
-            sessions = Conversation.objects.filter(query).distinct('session_id').values('time_stamp')
+            conv = list(Conversation.objects.filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+            complt = Q(session_id__in=conv)
+            ncomp = ~Q(session_id__in=conv)
+            qs1 = Conversation.objects.filter(query, complt).distinct('session_id').annotate(completed=Value('0', output_field=CharField()))
+            qs2 = Conversation.objects.filter(query, ncomp).distinct('session_id').annotate(completed=Value('1', output_field=CharField()))
+            qs = qs1.union(qs2)
+            sessions = qs.values('time_stamp')
             sessions = json.loads(dumps(sessions))
             result["message"] = "no graph data"
             if sessions:
