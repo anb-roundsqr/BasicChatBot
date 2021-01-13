@@ -40,7 +40,7 @@ from itertools import groupby
 # from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
-from django.db.models import Q, Value, CharField
+from django.db.models import Q, Value, CharField, Count
 from django.http.request import QueryDict
 from django.shortcuts import get_object_or_404
 import re
@@ -1624,7 +1624,7 @@ class Analytics(views.APIView):
                         "%Y-%m-%d"
                     )
                 )
-            print('actual_dates', actual_dates)
+            # print('actual_dates', actual_dates)
             query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
             if sender:
                 query &= Q(sender=sender)
@@ -1632,32 +1632,41 @@ class Analytics(views.APIView):
             conv = list(Conversation.objects.filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
             complt = Q(session_id__in=conv)
             ncomp = ~Q(session_id__in=conv)
-            qs1 = Conversation.objects.filter(query, complt).distinct('session_id').annotate(completed=Value('0', output_field=CharField()))
-            qs2 = Conversation.objects.filter(query, ncomp).distinct('session_id').annotate(completed=Value('1', output_field=CharField()))
-            qs = qs1.union(qs2)
-            sessions = qs.values('time_stamp')
-            sessions = json.loads(dumps(sessions))
+            qs1id = list(Conversation.objects.filter(query, complt).distinct('session_id').values_list('id', flat=True))
+            qs2id = list(Conversation.objects.filter(query, ncomp).distinct('session_id').values_list('id', flat=True))
+            qs1 = Conversation.objects.filter(id__in=qs1id)
+            qs2 = Conversation.objects.filter(id__in=qs2id)
+            q1j = qs1.values('time_stamp__date').annotate(completed=Count('time_stamp__date'))
+            q2j = qs2.values('time_stamp__date').annotate(incomplete=Count('time_stamp__date'))
+            for ele in q1j:
+                ele['incomplete'] = 0
+            for ele in q2j:
+                ele['completed'] = 0
+            qs = q1j.union(q2j)
+            sessions = []
+            for obj in qs:
+                for ele in sessions:
+                    if ele['time_stamp_date'] == obj['time_stamp_date']:
+                        ele['completed'] += obj['completed']
+                        ele['incomplete'] += obj['incomplete']
+                    else:
+                        sessions.append(obj)
+                if not sessions:
+                    sessions.append(obj)
+            for obj in sessions:
+                obj['time_stamp_date'] = obj['time_stamp_date'].strftime('%Y-%m-%d')
             result["message"] = "no graph data"
             if sessions:
-                for session in sessions:
-                    session["name"] = time_stamp_to_date_format(
-                        session["time_stamp"]["$date"]
-                    ).split()[0]
-                    del session["time_stamp"]
-                graph_data = unique_and_count(sessions)
-                existed_dates = [record["name"] for record in graph_data]
-                print('existed_dates', existed_dates)
+                existed_dates = [record["time_stamp_date"] for record in sessions]
+                # print('existed_dates', existed_dates)
                 for ac_date in actual_dates:
                     if ac_date not in existed_dates:
-                        graph_data.append({
-                            "name": ac_date,
-                            "value": 0
-                        })
-                graph_data.sort(key=lambda x: x['name'])
+                        sessions.append({"time_stamp_date": ac_date, "completed": 0, "incomplete": 0})
+                sessions.sort(key=lambda x: x['time_stamp_date'])
                 result.update({
                     "message": "graph data",
                     "status": "success",
-                    "response": graph_data
+                    "response": sessions
                 })
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
