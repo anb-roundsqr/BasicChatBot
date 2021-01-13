@@ -1646,7 +1646,7 @@ class Analytics(views.APIView):
             sessions = []
             for obj in qs:
                 for ele in sessions:
-                    if ele['time_stamp_date'] == obj['time_stamp_date']:
+                    if ele['time_stamp__date'] == obj['time_stamp__date']:
                         ele['completed'] += obj['completed']
                         ele['incomplete'] += obj['incomplete']
                     else:
@@ -1654,15 +1654,15 @@ class Analytics(views.APIView):
                 if not sessions:
                     sessions.append(obj)
             for obj in sessions:
-                obj['time_stamp_date'] = obj['time_stamp_date'].strftime('%Y-%m-%d')
+                obj['time_stamp__date'] = obj['time_stamp__date'].strftime('%Y-%m-%d')
             result["message"] = "no graph data"
             if sessions:
-                existed_dates = [record["time_stamp_date"] for record in sessions]
+                existed_dates = [record["time_stamp__date"] for record in sessions]
                 # print('existed_dates', existed_dates)
                 for ac_date in actual_dates:
                     if ac_date not in existed_dates:
-                        sessions.append({"time_stamp_date": ac_date, "completed": 0, "incomplete": 0})
-                sessions.sort(key=lambda x: x['time_stamp_date'])
+                        sessions.append({"time_stamp__date": ac_date, "completed": 0, "incomplete": 0})
+                sessions.sort(key=lambda x: x['time_stamp__date'])
                 result.update({
                     "message": "graph data",
                     "status": "success",
