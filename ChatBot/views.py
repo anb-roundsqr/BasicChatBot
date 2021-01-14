@@ -1,4 +1,4 @@
-from rest_framework import views, response, exceptions, renderers, viewsets, decorators, authentication
+from rest_framework import views, response, exceptions, renderers, viewsets, decorators, authentication, generics
 from datetime import datetime, timedelta
 from django.utils import timezone
 from ChatBot.functions import (
@@ -772,7 +772,8 @@ class ClientConfiguration(views.APIView):
                         if question['answer_type'].lower() in [
                             'select',
                             'checkbox',
-                            'radio'
+                            'radio',
+                            'action'
                         ]:
                             question_obj.suggested_answers = question[
                                 "suggested_answers"
@@ -2111,3 +2112,43 @@ class ChangePassword(views.APIView):
         user.save()
         context['message'] = "Password changed successfully."
         return response.Response(context, status=200)
+
+
+class ConfigurationList(generics.ListCreateAPIView):
+    queryset = BotConfiguration.objects.all()
+    serializer_class = ClientQuestionSerializer
+    # filter_backends = [filters.OrderingFilter, filters.SearchFilter]
+    # ordering_fields = ['id', 'customer', 'bot']
+    # search_fields = ['^question', 'suggested_answers']
+
+    def get(self, request, *args, **kwargs):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        return self.list(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        res = serializer.save()
+
+
+class ConfigurationDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = BotConfiguration.objects.all()
+    serializer_class = ClientQuestionSerializer
+
+    def perform_update(self, serializer):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        res = serializer.save()

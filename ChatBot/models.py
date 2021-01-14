@@ -162,6 +162,7 @@ class BotConfiguration(models.Model):
         ('CHECKBOX', 'checkbox', _('CHECKBOX')),
         ('FILE', 'file', _('FILE')),
         ('DATE', 'date', _('DATE')),
+        ('ACTION', 'action', _('ACTION')),
     )
     answer_type = models.CharField(max_length=10, choices=ANSWER_TYPE)
     suggested_answers = models.TextField(default=[])
@@ -171,14 +172,18 @@ class BotConfiguration(models.Model):
     error_msg = models.TextField(default="")
     # created_by_id = models.IntegerField()
     # updated_by_id = models.IntegerField()
-    date_created = models.DateTimeField(null=False, blank=False)
-    date_modified = models.DateTimeField(null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
     required = models.CharField(max_length=4, default="no")
     related = models.BooleanField(default=False)
     is_first_question = models.BooleanField(default=False)
     is_last_question = models.BooleanField(default=False)
     is_lead_gen_question = models.BooleanField(default=False)
+    validation_custom = models.TextField(default='[]')
+    number_of_params = models.IntegerField(default=0)
+    fields = models.TextField(default='[]')
+    api_name = models.CharField(max_length=200, null=True, blank=True)
 
     class Meta:
         app_label = 'ChatBot'
