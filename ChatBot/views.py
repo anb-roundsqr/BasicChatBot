@@ -1653,7 +1653,7 @@ class Analytics(views.APIView):
                     cnt += 1
                 idx = 1
                 for ele in sessions:
-                    if ele['time_stamp__date'] == obj['time_stamp__date']:
+                    if ele['date'] == obj['date']:
                         ele['completed'] += obj['completed']
                         ele['incomplete'] += ele['incomplete']
                         continue
