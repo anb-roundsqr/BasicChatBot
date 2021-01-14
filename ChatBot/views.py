@@ -1638,31 +1638,37 @@ class Analytics(views.APIView):
             qs2 = Conversation.objects.filter(id__in=qs2id)
             q1j = qs1.values('time_stamp__date').annotate(completed=Count('time_stamp__date'))
             q2j = qs2.values('time_stamp__date').annotate(incomplete=Count('time_stamp__date'))
+            qs = []
             for ele in q1j:
-                ele['incomplete'] = 0
+                obj = {"date": ele['time_stamp__date'].strftime('%Y-%m-%d'), "completed": ele['completed'], "incomplete": 0}
+                qs.append(obj)
             for ele in q2j:
-                ele['completed'] = 0
-            qs = q1j.union(q2j)
+                obj = {"date": ele['time_stamp__date'].strftime('%Y-%m-%d'), "completed": 0, "incomplete": ele['incomplete']}
+                qs.append(obj)
             sessions = []
+            cnt = 0
             for obj in qs:
+                if not sessions:
+                    sessions.append(obj)
+                    cnt += 1
+                idx = 1
                 for ele in sessions:
                     if ele['time_stamp__date'] == obj['time_stamp__date']:
                         ele['completed'] += obj['completed']
-                        ele['incomplete'] += obj['incomplete']
-                    else:
+                        ele['incomplete'] += ele['incomplete']
+                        continue
+                    elif cnt == idx:
                         sessions.append(obj)
-                if not sessions:
-                    sessions.append(obj)
-            for obj in sessions:
-                obj['time_stamp__date'] = obj['time_stamp__date'].strftime('%Y-%m-%d')
+                        cnt += 1
+                    idx += 1
             result["message"] = "no graph data"
             if sessions:
-                existed_dates = [record["time_stamp__date"] for record in sessions]
+                existed_dates = [record["date"] for record in sessions]
                 # print('existed_dates', existed_dates)
                 for ac_date in actual_dates:
                     if ac_date not in existed_dates:
-                        sessions.append({"time_stamp__date": ac_date, "completed": 0, "incomplete": 0})
-                sessions.sort(key=lambda x: x['time_stamp__date'])
+                        sessions.append({"date": ac_date, "completed": 0, "incomplete": 0})
+                sessions.sort(key=lambda x: x['date'])
                 result.update({
                     "message": "graph data",
                     "status": "success",
