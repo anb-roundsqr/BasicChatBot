@@ -130,6 +130,7 @@ class Conversation(models.Model):
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot_origin_url = models.TextField()
     ip_address = models.TextField(null=True)
+    country = models.CharField(max_length=4, default='IN')
     session_id = models.TextField()
     event_name = models.TextField()  # bot or user response
     time_stamp = models.DateTimeField(auto_now_add=True)

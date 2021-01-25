@@ -56,6 +56,7 @@ import jwt
 import uuid
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated
+import requests as rq
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -1215,6 +1216,7 @@ class ClientForm(views.APIView):
                     if match:
                         con_obj.latitude = match.location[0]
                         con_obj.longitude = match.location[1]
+                        con_obj.country = match.country
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
                 else:
@@ -1588,13 +1590,13 @@ class Analytics(views.APIView):
         }
         try:
             days_count = int(request.query_params.get("days_count", 30))
-            status = request.query_params.get("status", 'all')
+            # status = request.query_params.get("status", 'all')
             sender = request.query_params.get("sender", "")
             slug = kwargs["slug"]
             if slug == "session":
                 result.update(self.session_metrics(days_count, sender))
             elif slug == "leads":
-                result.update(self.leads_metrics())
+                result.update(self.leads_metrics(days_count, sender))
             else:
                 result.update(self.chat_metrics(days_count, sender))
         except KeyError as e:
@@ -1682,7 +1684,65 @@ class Analytics(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def leads_metrics(self):
+    def leads_metrics(self, days_count, sender):
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            current_date = datetime.now(tz=timezone.utc)
+            start_date = current_date - timedelta(days=days_count)
+            actual_dates = []
+            for i in range(days_count):
+                actual_dates.append(
+                    datetime.strftime(
+                        start_date + timedelta(days=i),
+                        "%Y-%m-%d"
+                    )
+                )
+            query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            if sender:
+                query &= Q(sender=sender)
+            questions = list(BotConfiguration.objects.all().filter(is_lead_gen_question=True).values_list('question', flat=True))
+            conv = list(Conversation.objects.filter(text__in=questions).distinct('session_id').values_list('id', flat=True))
+            qs = Conversation.objects.filter(id__in=conv)
+            qsl = []
+            for ele in qs:
+                resp = rq.get('https://restcountries.eu/rest/v2/alpha/' + ele.country).json()
+                obj = {"country": resp['name'], "count": 1, "lat": str(ele.latitude), "long": str(ele.longitude)}
+                qsl.append(obj)
+            sessions = []
+            cnt = 0
+            leads = len(qsl)
+            for obj in qsl:
+                if not sessions:
+                    sessions.append(obj)
+                    cnt += 1
+                idx = 1
+                for ele in sessions:
+                    if ele['country'] == obj['country']:
+                        ele['count'] += obj['count']
+                        continue
+                    elif cnt == idx:
+                        sessions.append(obj)
+                        cnt += 1
+                    idx += 1
+            result["message"] = "no graph data"
+            if sessions:
+                result.update({
+                    "message": "graph data",
+                    "status": "success",
+                    "leads": leads,
+                    "countries": sessions
+                })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            print("exception")
+            result.update(exception_handler(e))
+        return result
+
+    def leads_metrics_old(self):
         result = {
             "message": "graph data",
             "status": "success",
