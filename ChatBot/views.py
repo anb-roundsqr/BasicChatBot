@@ -1710,7 +1710,7 @@ class Analytics(views.APIView):
             qsl = []
             for ele in qs:
                 country = COUNTRY_CHOICES_MAPPING.get(ele.country, "India")
-                obj = {"country": country, "count": 1, "lat": str(ele.latitude), "long": str(ele.longitude)}
+                obj = {"country": country, "count": 0, "lat": str(ele.latitude), "long": str(ele.longitude)}
                 qsl.append(obj)
             sessions = []
             cnt = 0
@@ -1722,7 +1722,7 @@ class Analytics(views.APIView):
                 idx = 1
                 for ele in sessions:
                     if ele['country'] == obj['country']:
-                        ele['count'] += obj['count']
+                        ele['count'] += 1
                         continue
                     elif cnt == idx:
                         sessions.append(obj)
