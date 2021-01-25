@@ -57,6 +57,7 @@ import uuid
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 import requests as rq
+from ChatBot.constants import COUNTRY_CHOICES_MAPPING
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -1708,8 +1709,8 @@ class Analytics(views.APIView):
             qs = Conversation.objects.filter(id__in=conv)
             qsl = []
             for ele in qs:
-                resp = rq.get('https://restcountries.eu/rest/v2/alpha/' + ele.country).json()
-                obj = {"country": resp['name'], "count": 1, "lat": str(ele.latitude), "long": str(ele.longitude)}
+                country = COUNTRY_CHOICES_MAPPING.get(ele.country, "India")
+                obj = {"country": country, "count": 1, "lat": str(ele.latitude), "long": str(ele.longitude)}
                 qsl.append(obj)
             sessions = []
             cnt = 0
