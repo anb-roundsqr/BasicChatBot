@@ -1705,7 +1705,7 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             questions = list(BotConfiguration.objects.all().filter(is_lead_gen_question=True).values_list('question', flat=True))
-            conv = list(Conversation.objects.filter(text__in=questions).distinct('session_id').values_list('id', flat=True))
+            conv = list(Conversation.objects.filter(query).filter(text__in=questions).distinct('session_id').values_list('id', flat=True))
             qs = Conversation.objects.filter(id__in=conv)
             qsl = []
             for ele in qs:
