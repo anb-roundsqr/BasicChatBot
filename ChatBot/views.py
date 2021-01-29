@@ -1705,7 +1705,7 @@ class Analytics(views.APIView):
             query = Q()
             if sender:
                 query &= Q(sender=sender)
-            questions = list(BotConfiguration.objects.all().filter(is_lead_gen_question=True).values_list('question', flat=True))
+            questions = list(BotConfiguration.objects.all().values_list('question', flat=True))
             conv = list(Conversation.objects.filter(query).filter(text__in=questions).distinct('session_id').values_list('id', flat=True))
             qs = Conversation.objects.filter(id__in=conv)
             qsl = []
@@ -1715,7 +1715,6 @@ class Analytics(views.APIView):
                 qsl.append(obj)
             sessions = []
             cnt = 0
-            leads = len(qsl)
             for obj in qsl:
                 if not sessions:
                     sessions.append(obj)
@@ -1729,11 +1728,16 @@ class Analytics(views.APIView):
                         sessions.append(obj)
                         cnt += 1
                     idx += 1
+            worldwide = len(qsl)
+            lead_qs = list(BotConfiguration.objects.all().filter(is_lead_gen_question=True).values_list('question', flat=True))
+            lead_conv = list(Conversation.objects.filter(query).filter(text__in=lead_qs).distinct('session_id').values_list('id', flat=True))
+            leads = Conversation.objects.filter(id__in=lead_conv).count()
             result["message"] = "no graph data"
             if sessions:
                 result.update({
                     "message": "graph data",
                     "status": "success",
+                    "worldwide": worldwide,
                     "leads": leads,
                     "countries": sessions
                 })
