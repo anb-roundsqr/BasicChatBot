@@ -1701,7 +1701,8 @@ class Analytics(views.APIView):
                         "%Y-%m-%d"
                     )
                 )
-            query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            # query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            query = Q()
             if sender:
                 query &= Q(sender=sender)
             questions = list(BotConfiguration.objects.all().filter(is_lead_gen_question=True).values_list('question', flat=True))
