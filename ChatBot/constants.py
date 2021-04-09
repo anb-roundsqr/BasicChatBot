@@ -1,15 +1,15 @@
-import logging
-
-logging.basicConfig(
-    filename='test_log.log',
-    level=logging.INFO,
-    filemode='a',
-    format='%(asctime)s %(process)d-%(name)-12s'
-           ' %(levelname)-8s -%(funcName)s  -  %(lineno)d     %(message)s'
-)
-
-# Get an instance of a logger
-logger = logging.getLogger(__name__)
+# import logging
+#
+# logging.basicConfig(
+#     filename='test_log.log',
+#     level=logging.INFO,
+#     filemode='a',
+#     format='%(asctime)s %(process)d-%(name)-12s'
+#            ' %(levelname)-8s -%(funcName)s  -  %(lineno)d     %(message)s'
+# )
+#
+# # Get an instance of a logger
+# logger = logging.getLogger(__name__)
 
 POWER_BOT_WEB_SITE = 'https://www.firstmatch.com/'
 

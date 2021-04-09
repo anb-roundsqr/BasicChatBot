@@ -153,7 +153,7 @@ class BotConfiguration(models.Model):
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
     question = models.TextField(max_length=250)
-    description = models.TextField(max_length=500, null=True)
+    description = models.TextField(max_length=500, null=True, blank=True)
     question_id = models.IntegerField()  # UI Purpose
     ANSWER_TYPE = Choices(
         ('TEXT', 'text', _('TEXT')),
@@ -168,9 +168,9 @@ class BotConfiguration(models.Model):
     answer_type = models.CharField(max_length=10, choices=ANSWER_TYPE)
     suggested_answers = models.TextField(default=[])
     suggested_jump = models.TextField(default=[])
-    validation1 = models.TextField(default="")
-    validation2 = models.TextField(default="")
-    error_msg = models.TextField(default="")
+    validation1 = models.TextField(null=True, blank=True)
+    validation2 = models.TextField(null=True, blank=True)
+    error_msg = models.TextField(null=True, blank=True)
     # created_by_id = models.IntegerField()
     # updated_by_id = models.IntegerField()
     date_created = models.DateTimeField(auto_now_add=True)
