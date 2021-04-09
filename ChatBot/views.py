@@ -13,7 +13,8 @@ from ChatBot.models import (
     Admin,
     Customers,
     CustomerBots,
-    Conversation
+    Conversation,
+    BulkQuestion
 )
 from ChatBot.serializers import (
     ClientQuestionSerializer,
@@ -33,6 +34,7 @@ from ChatBot.serializers import (
     CustomerBotCreateSerializer,
     CustomerBotRetrieveSerializer,
     CustomerBotUpdateSerializer,
+    BulkQuestionSerializer,
 )
 import json
 from geoip import geolite2
@@ -477,6 +479,7 @@ class CustomerBotViewSet(viewsets.ViewSet):
             "message": "",
             "status": "failed"
         }
+        bot_serializer = CustomerBotCreateSerializer(data="")
         try:
             if isinstance(request.data, QueryDict):
                 request.data._mutable = True
@@ -515,7 +518,10 @@ class CustomerBotViewSet(viewsets.ViewSet):
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
             if "customer_id_text" in result["response"]:
-                result["response"] = {"customer_bot": "mapping already existed."}
+                cb_data = CustomerBots.objects.filter(
+                    customer_id=bot_serializer.data['customer'], bot_id=bot_serializer.data['bot'])
+                cb = cb_data[0].id if cb_data else None
+                result["response"] = {"mapping_id": str(cb), "customer_bot": "mapping already existed."}
         except Exception as e:
             result.update(exception_handler(e))
         print("result", result)
@@ -2209,6 +2215,43 @@ class ConfigurationList(generics.ListCreateAPIView):
 class ConfigurationDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = BotConfiguration.objects.all()
     serializer_class = ClientQuestionSerializer
+
+    def perform_update(self, serializer):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        res = serializer.save()
+
+
+class BulkQuestionList(generics.ListCreateAPIView):
+    queryset = BulkQuestion.objects.all()
+    serializer_class = BulkQuestionSerializer
+
+    def get(self, request, *args, **kwargs):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        return self.list(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        res = serializer.save()
+
+
+class BulkQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = BulkQuestion.objects.all()
+    serializer_class = BulkQuestionSerializer
 
     def perform_update(self, serializer):
         token_auth = TokenAuthentication()

@@ -40,4 +40,6 @@ urlpatterns = [
     path('change-password', vu.ChangePassword.as_view()),
     path('bot_configurations/', vu.ConfigurationList.as_view()),
     path('bot_configuration_details/<int:pk>/', vu.ConfigurationDetail.as_view()),
+    path('configure_questions/', vu.BulkQuestionList.as_view()),
+    path('configure_question_details/<int:pk>/', vu.BulkQuestionDetail.as_view()),
 ]

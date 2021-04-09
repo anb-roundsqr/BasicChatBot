@@ -191,6 +191,11 @@ class BotConfiguration(models.Model):
         db_table = '%s_client_questions' % app_label
 
 
+class BulkQuestion(models.Model):
+    mapping_id = models.ForeignKey(CustomerBots, on_delete=models.CASCADE, related_name='bulk_questions')
+    questions = models.ManyToManyField(BotConfiguration)
+
+
 class EmailStatus(models.Model):
 
     objects = models.Manager()
