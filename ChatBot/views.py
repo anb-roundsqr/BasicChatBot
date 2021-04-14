@@ -2246,7 +2246,19 @@ class BulkQuestionList(generics.ListCreateAPIView):
             return response.Response(
                 auth_result,
             )
+        data = self.request.data
+        ques = data.get('questions', [])
         res = serializer.save()
+        cust = res.mapping_id.customer
+        bot = res.mapping_id.bot
+        for que in ques:
+            conf = BotConfiguration.objects.create(
+                question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
+                suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
+                related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                is_last_question=que['is_last_question'], customer=cust, bot=bot)
+            res.questions.add(conf)
 
 
 class BulkQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -2260,4 +2272,34 @@ class BulkQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
             return response.Response(
                 auth_result,
             )
+        data = self.request.data
+        ques = data.get('questions', [])
         res = serializer.save()
+        cust = res.mapping_id.customer
+        bot = res.mapping_id.bot
+        for que in ques:
+            try:
+                conf = BotConfiguration.objects.get(id=que['id'])
+                conf.question = que['question']
+                conf.answer_type = que['answer_type']
+                conf.suggested_answers = que['suggested_answers']
+                conf.suggested_jump = que['suggested_jump']
+                conf.fields = que['fields']
+                conf.api_name = que['api_name']
+                conf.number_of_params = que['number_of_params']
+                conf.required = que['required']
+                conf.related = que['related']
+                conf.is_lead_gen_question = que['is_lead_gen_question']
+                conf.is_last_question = que['is_last_question']
+                conf.customer = cust
+                conf.bot = bot
+                conf.save()
+            except Exception as e:
+                print(e)
+                conf = BotConfiguration.objects.create(
+                    question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
+                    suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                    api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
+                    related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                    is_last_question=que['is_last_question'], customer=cust, bot=bot)
+                res.questions.add(conf)

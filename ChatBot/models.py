@@ -171,8 +171,6 @@ class BotConfiguration(models.Model):
     validation1 = models.TextField(null=True, blank=True)
     validation2 = models.TextField(null=True, blank=True)
     error_msg = models.TextField(null=True, blank=True)
-    # created_by_id = models.IntegerField()
-    # updated_by_id = models.IntegerField()
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)

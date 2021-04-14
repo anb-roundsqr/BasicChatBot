@@ -173,8 +173,17 @@ class CustomerBotUpdateSerializer(serializers.ModelSerializer):
         ]
 
 
+class QuestionListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = BotConfiguration
+        exclude = ['description', 'validation1', 'validation2', 'error_msg']
+        order_by = ['-id']
+
+
 class BulkQuestionSerializer(serializers.ModelSerializer):
-    questions = ClientQuestionSerializer(many=True, required=False, read_only=True)
+    questions = QuestionListSerializer(many=True, required=False, read_only=True)
 
     class Meta:
         model = BulkQuestion
