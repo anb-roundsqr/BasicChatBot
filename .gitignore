@@ -157,3 +157,4 @@ BasicChatBot/.idea/*
 /BasicChatBot/ChatBot/__pycache__
 venv/
 migrations
+/BasicChatBot/ChatBot/.env
