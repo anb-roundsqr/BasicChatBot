@@ -1,6 +1,7 @@
 from django.db import models
 from model_utils import Choices
 from django.utils.translation import ugettext_lazy as _
+from .constants import get_a_uuid
 
 
 class Admin(models.Model):
@@ -85,8 +86,8 @@ class CustomerBots(models.Model):
     """
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
-    customer_id_text = models.TextField(max_length=100, null=False, unique=True)
-    bot_id_text = models.TextField(max_length=150, null=False)
+    customer_id_text = models.TextField(max_length=100, unique=True, default=get_a_uuid)
+    bot_id_text = models.TextField(max_length=150, null=True, blank=True)
     source_url = models.TextField(unique=True)
     BOT_TYPE = Choices(
         ('BASIC', 'basic', _('BASIC')),

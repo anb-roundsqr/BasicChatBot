@@ -1,3 +1,4 @@
+import uuid
 # import logging
 #
 # logging.basicConfig(
@@ -298,3 +299,7 @@ COUNTRY_CHOICES = (
     ("ZW", "Zimbabwe")
 )
 COUNTRY_CHOICES_MAPPING, COUNTRY_CHOICES_REVERSE_MAPPING = get_choices_dicts(COUNTRY_CHOICES)
+
+
+def get_a_uuid():
+    return str(uuid.uuid4()).replace('-', '')

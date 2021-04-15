@@ -2303,3 +2303,57 @@ class BulkQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
                     related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
                     is_last_question=que['is_last_question'], customer=cust, bot=bot)
                 res.questions.add(conf)
+
+
+class CustomerBotsList(generics.ListCreateAPIView):
+    queryset = CustomerBots.objects.all()
+    serializer_class = CustomerBotRetrieveSerializer
+
+    def get(self, request, *args, **kwargs):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        return self.list(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        try:
+            data = self.request.data
+            bot = Bots.objects.get(id=data['bot'])
+            cust = Customers.objects.get(id=data['customer'])
+            bot_id_text = "%s%s" % (str(bot.name), str(bot.id).zfill(4))
+            cust_id_text = "%s_%s" % (str(cust.org_name), str(bot_id_text))
+            serializer.validated_data['customer_id_text'] = cust_id_text
+            serializer.validated_data['bot_id_text'] = bot_id_text
+            res = serializer.save()
+        except Exception as e:
+            if 'UNIQUE constraint' in str(e.args):
+                raise exceptions.ValidationError({"message": ["Customer with the bot already have a configuration."]})
+            else:
+                raise exceptions.ValidationError({"message": [str(e)]})
+
+
+class CustomerBotsDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CustomerBots.objects.all()
+    serializer_class = CustomerBotRetrieveSerializer
+
+    def perform_update(self, serializer):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        try:
+            data = self.request.data
+            bot = Bots.objects.get(id=data['bot'])
+            cust = Customers.objects.get(id=data['customer'])
+            bot_id_text = "%s%s" % (str(bot.name), str(bot.id).zfill(4))
+            cust_id_text = "%s_%s" % (str(cust.org_name), str(bot_id_text))
+            serializer.validated_data['customer_id_text'] = cust_id_text
+            serializer.validated_data['bot_id_text'] = bot_id_text
+            res = serializer.save()
+        except Exception as e:
+            print(e)
