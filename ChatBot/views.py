@@ -5,7 +5,7 @@ from ChatBot.functions import (
     process_api_exception,
     exception_handler,
     time_stamp_to_date_format,
-    send_email
+    send_emails, email_save
 )
 from ChatBot.models import (
     BotConfiguration,
@@ -60,6 +60,8 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 import requests as rq
 from ChatBot.constants import COUNTRY_CHOICES_MAPPING
+from django.template.loader import get_template
+from django.conf import settings
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -113,7 +115,8 @@ class CustomerViewSet(viewsets.ViewSet):
                 context=serializer_context)
             customer_serializer.is_valid(raise_exception=True)
             customer_serializer.save()
-            template = "emails/customer_register.html"
+            template_path = "emails/customer_register.html"
+            txt_path = "emails/email.txt"
             context = {
                 'point_of_contact': customer_serializer.data["name"],
                 'org_name': requested_data["org_name"],
@@ -124,13 +127,14 @@ class CustomerViewSet(viewsets.ViewSet):
             }
             recipient = requested_data["email_id"]
             subject = "Congrats RoundSqr Customer"
-            send_email(
-                template,
-                context,
-                recipient,
-                subject,
-                1,  # auth_result["user"].id
-            )
+            # send_email(template, context, recipient, subject, 1, auth_result["user"].id)
+            template = get_template(template_path)
+            txt = get_template(txt_path)
+            text_content = txt.render(context)
+            html_content = template.render(context)
+            send_emails(subject=subject, from_email="powerbot@roundsqr.net", recipient_list=[recipient],
+                        text_content=text_content, html_content=html_content)
+            email_save(template_path, context, recipient, subject, result, 1, 1)
             result.update({
                 "message": "customer created",
                 "status": "success",
@@ -1833,16 +1837,16 @@ def register_admin(request):
         "message": "admin already existed",
         "status": "failed"
     }
-    email_id = "raja@roundsqr.com"
-    mobile = 9959047000
+    email_id = settings.ADMIN_EMAIL
+    mobile = settings.ADMIN_PHONE
+    name = settings.ADMIN_NAME
+    password = settings.ADMIN_PASS
     admin_info = Admin.objects.filter(mobile=mobile, email_id=email_id)
     if not admin_info:
-        characters = string.ascii_letters + string.digits
-        password = "".join(
-            choice(characters) for x in range(randint(8, 16))
-        )
+        # characters = string.ascii_letters + string.digits
+        # password = "".join(choice(characters) for x in range(randint(8, 16)))
         admin_obj = Admin()
-        admin_obj.name = "Raja Devarakonda"
+        admin_obj.name = name
         admin_obj.email_id = email_id
         admin_obj.mobile = mobile
         admin_obj.password = base64.b64encode(bytes(password.encode())).decode()
@@ -2069,10 +2073,10 @@ class ForgotPassword(views.APIView):
                 'username': email_id,
                 'password': "",
                 'login_url': "%s/login" % WEB_HOST,
-                'official_signature': 'RAJA DEVARAKONDA'
+                'official_signature': settings.ADMIN_NAME
             }
             if "admin" in request.META["PATH_INFO"]:
-                org_name = "RoundSqr"
+                org_name = settings.ADMIN_ORG
                 user_info = Admin.objects.get(email_id=email_id)
                 context["point_of_contact"] = user_info.full_name
                 context["password"] = base64.b64decode(
@@ -2089,10 +2093,18 @@ class ForgotPassword(views.APIView):
                 context["point_of_contact"] = customer.name
                 context["password"] = base64.b64decode(
                     customer.password).decode()
-            template = "emails/forgot_password.html"
+            template_path = "emails/forgot_password.html"
+            txt_path = "emails/email.txt"
             recipient = email_id
             subject = "Your %s account password" % org_name
-            send_email(template, context, recipient, subject, None)
+            # send_email(template, context, recipient, subject, None)
+            template = get_template(template_path)
+            txt = get_template(txt_path)
+            text_content = txt.render(context)
+            html_content = template.render(context)
+            send_emails(subject=subject, from_email="powerbot@roundsqr.net",  recipient_list=[recipient],
+                        text_content=text_content, html_content=html_content)
+            email_save(template_path, context, recipient, subject, result, 1)
             result.update({
                 "message": "password retrieved successfully",
                 "status": "success"

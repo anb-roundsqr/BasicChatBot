@@ -11,11 +11,15 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
+import environ
+from pathlib import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 
-
+env = environ.Env()
+env.read_env()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
@@ -35,7 +39,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'ChatBot',
-    'django_extensions'
+    'django_extensions',
+    'django_ses'
 ]
 
 MIDDLEWARE = [
@@ -87,6 +92,22 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+DATABASES = {
+    # read os.environ['DATABASE_URL'] and raises ImproperlyConfigured exception if not found
+    # 'default': env.db()
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+
+EMAIL_BACKEND = env('EMAIL_BACKEND')
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+AWS_SES_REGION_NAME = env('AWS_SES_REGION_NAME')
+AWS_SES_REGION_ENDPOINT = env('AWS_SES_REGION_ENDPOINT')
+EMAIL_TIMEOUT = 5
+
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
@@ -107,3 +128,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = os.path.join(BASE_DIR, 'static'),
+
+ADMIN_EMAIL = env('ADMIN_EMAIL')
+ADMIN_PHONE = env('ADMIN_PHONE')
+ADMIN_NAME = env('ADMIN_NAME')
+ADMIN_PASS = env('ADMIN_PASS')
+ADMIN_ORG = env('ADMIN_ORG')
