@@ -107,8 +107,8 @@ class CustomerBots(models.Model):
     user_bubble_colour = models.CharField(max_length=25, default='#606060')
     chat_bot_font_colour = models.CharField(max_length=25, default='#000000')
     chat_user_font_colour = models.CharField(max_length=25, default='#FFFFFF')
-    date_created = models.DateTimeField(null=False, blank=False)
-    date_modified = models.DateTimeField(null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     created_by_id = models.IntegerField(null=True)
     updated_by_id = models.IntegerField(null=True)
     '''
