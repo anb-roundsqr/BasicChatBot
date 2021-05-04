@@ -2198,9 +2198,9 @@ class ChangePassword(views.APIView):
         return response.Response(context, status=200)
 
 
-class BotList(generics.ListCreateAPIView):
+class BotList(views.APIView):
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request):
         token_auth = TokenAuthentication()
         auth_result = token_auth.authenticate(request)
         if "error" in auth_result:
