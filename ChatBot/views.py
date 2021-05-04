@@ -2198,6 +2198,26 @@ class ChangePassword(views.APIView):
         return response.Response(context, status=200)
 
 
+class BotList(generics.ListCreateAPIView):
+
+    def get(self, request, *args, **kwargs):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        context = {}
+        user = self.request.user
+        cb_config = CustomerBots.objects.filter(customer=user)
+        queryset = cb_config.values('bot_id', 'bot__name')
+        data = []
+        for obj in queryset:
+            data.append({"id": obj['bot_id'], "name": obj['bot__name']})
+        context['data'] = data
+        return response.Response(context, status=200)
+
+
 class ConfigurationList(generics.ListCreateAPIView):
     queryset = BotConfiguration.objects.all()
     serializer_class = ClientQuestionSerializer

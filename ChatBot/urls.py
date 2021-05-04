@@ -38,6 +38,7 @@ urlpatterns = [
     re_path(r'(?P<slug>[\w-]+)/logout', vu.Logout.as_view()),
     path('customer/signup', vu.ClientSignup.as_view()),
     path('change-password', vu.ChangePassword.as_view()),
+    path('bot_list/', vu.BotList.as_view()),
     path('bot_configurations/', vu.ConfigurationList.as_view()),
     path('bot_configuration_details/<int:pk>/', vu.ConfigurationDetail.as_view()),
     path('configure_questions/', vu.BulkQuestionList.as_view()),
