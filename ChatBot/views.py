@@ -1603,13 +1603,14 @@ class Analytics(views.APIView):
             days_count = int(request.query_params.get("days_count", 30))
             # status = request.query_params.get("status", 'all')
             sender = request.query_params.get("sender", "")
+            bot_id = request.query_params.get("bot_id", "")
             slug = kwargs["slug"]
             if slug == "session":
-                result.update(self.session_metrics(days_count, sender))
+                result.update(self.session_metrics(days_count, sender, bot_id))
             elif slug == "leads":
-                result.update(self.leads_metrics(days_count, sender))
+                result.update(self.leads_metrics(days_count, sender, bot_id))
             else:
-                result.update(self.chat_metrics(days_count, sender))
+                result.update(self.chat_metrics(days_count, sender, bot_id))
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -1620,7 +1621,7 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def session_metrics(self, days_count, sender):
+    def session_metrics(self, days_count, sender, bot_id=''):
         result = {
             "message": "",
             "status": "failed"
@@ -1642,8 +1643,9 @@ class Analytics(views.APIView):
             query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
             if sender:
                 query &= Q(sender=sender)
-            questions = list(BotConfiguration.objects.all().filter(is_last_question=True).values_list('question', flat=True))
-            conv = list(Conversation.objects.filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+            bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
+            questions = list(BotConfiguration.objects.all().filter(bot_query).filter(is_last_question=True).values_list('question', flat=True))
+            conv = list(Conversation.objects.all().filter(bot_query).filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
             complt = Q(session_id__in=conv)
             ncomp = ~Q(session_id__in=conv)
             qs1id = list(Conversation.objects.filter(query, complt).distinct('session_id').values_list('id', flat=True))
@@ -1695,7 +1697,7 @@ class Analytics(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def leads_metrics(self, days_count, sender):
+    def leads_metrics(self, days_count, sender, bot_id=''):
         result = {
             "message": "",
             "status": "failed"
@@ -1715,8 +1717,9 @@ class Analytics(views.APIView):
             query = Q()
             if sender:
                 query &= Q(sender=sender)
-            questions = list(BotConfiguration.objects.all().values_list('question', flat=True))
-            conv = list(Conversation.objects.filter(query).filter(text__in=questions).distinct('session_id').values_list('id', flat=True))
+            bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
+            questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
+            conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(text__in=questions).distinct('session_id').values_list('id', flat=True))
             qs = Conversation.objects.filter(id__in=conv)
             qsl = []
             for ele in qs:
@@ -1739,8 +1742,8 @@ class Analytics(views.APIView):
                         cnt += 1
                     idx += 1
             worldwide = len(qsl)
-            lead_qs = list(BotConfiguration.objects.all().filter(is_lead_gen_question=True).values_list('question', flat=True))
-            lead_conv = list(Conversation.objects.filter(query).filter(text__in=lead_qs).distinct('session_id').values_list('id', flat=True))
+            lead_qs = list(BotConfiguration.objects.all().filter(bot_query).filter(is_lead_gen_question=True).values_list('question', flat=True))
+            lead_conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(text__in=lead_qs).distinct('session_id').values_list('id', flat=True))
             leads = Conversation.objects.filter(id__in=lead_conv).count()
             result["message"] = "no graph data"
             if sessions:
@@ -1775,7 +1778,7 @@ class Analytics(views.APIView):
         }
         return result
 
-    def chat_metrics(self, days_count, sender):
+    def chat_metrics(self, days_count, sender, bot_id=''):
 
         result = {
             "message": "",
@@ -1798,7 +1801,8 @@ class Analytics(views.APIView):
             query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
             if sender:
                 query &= Q(sender=sender)
-            chats = Conversation.objects.filter(query).values('time_stamp')
+            bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
+            chats = Conversation.objects.all().filter(bot_query).filter(query).values('time_stamp')
             chats = json.loads(dumps(chats))
             result["message"] = "no graph data"
             if chats:
