@@ -2208,10 +2208,14 @@ class BotList(views.APIView):
                 auth_result,
             )
         context = {}
-        user = self.request.user
-        cb_config = CustomerBots.objects.filter(customer=user)
-        queryset = cb_config.values('bot_id', 'bot__name')
         data = []
+        queryset = []
+        user = auth_result["user"]
+        try:
+            cb_config = CustomerBots.objects.filter(customer=user)
+            queryset = cb_config.values('bot_id', 'bot__name')
+        except Exception as e:
+            print(e)
         for obj in queryset:
             data.append({"id": obj['bot_id'], "name": obj['bot__name']})
         context['data'] = data
