@@ -2406,15 +2406,23 @@ class Reports(views.APIView):
     def get(self, request):
         token_auth = TokenAuthentication()
         auth_result = token_auth.authenticate(request)
-        if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
-
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
         result = {
             "message": "Something went wrong.",
             "status": "failed"
         }
+        try:
+            cust_id = auth_result["user"].id
+            customer = Customers.objects.get(id=cust_id)
+        except:
+            cust_id = request.query_params.get("customer_id", "")
+            if not cust_id:
+                return response.Response(result)
+            customer = Customers.objects.get(id=cust_id)
+
         today = datetime.now()
         try:
             bot_id = request.query_params.get("bot_id", "")
@@ -2424,7 +2432,7 @@ class Reports(views.APIView):
             nd_dt = request.query_params.get("end_date", "")
             start = datetime.strptime(st_dt, "%Y-%m-%d") if st_dt else None
             end = datetime.strptime(nd_dt, "%Y-%m-%d") if nd_dt else today.date()
-            bot_query = Q(customer=auth_result["user"], bot_id=bot_id) if bot_id.isdigit() else Q(customer=auth_result["user"])
+            bot_query = Q(customer=customer, bot_id=bot_id) if bot_id.isdigit() else Q(customer=customer)
             range_query = Q(time_stamp__date__range=[start, end]) if start else Q(time_stamp__date__lte=end)
             data = []
             cb_relation = CustomerBots.objects.all().filter(bot_query)
@@ -2440,10 +2448,11 @@ class Reports(views.APIView):
                 for obj in queryset:
                     # conversation.append({"session_id": session_id, "sender": obj.sender, "message": obj.text,
                     #                      "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %I:%M %p")})
-                    data.append({"session_id": session_id, "bot_name": cb_relation[0].bot.name,
-                                 "source_url": cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime(
-                            "%Y-%m-%d %I:%M %p"), "sender": obj.sender, "message": obj.text,
-                                 "download": "/reports_download/?download=true&session_id=" + session_id})
+                    data.append(
+                        {"session_id": session_id, "bot_name": cb_relation[0].bot.name, "source_url":
+                            cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %I:%M %p"),
+                         "sender": obj.sender, "message": obj.text, "download":
+                             "/reports_download/?download=true&session_id=" + session_id + "&customer_id=" + cust_id})
             if download == 'true':
                 headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
                 resp = HttpResponse(content_type='text/csv')
@@ -2457,7 +2466,7 @@ class Reports(views.APIView):
                 return response
             result.update(
                 {"message": "Conversation data fetching success.", "status": "success",
-                 "response": {"data": data, "download_all": "/reports_download/?download=true"}})
+                 "response": {"data": data, "download_all": "/reports_download/?download=true&customer_id=" + cust_id}})
         except Exception as e:
             result.update({"message": "error", "response": str(e)})
         # print("result", result)
