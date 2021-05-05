@@ -2456,7 +2456,8 @@ class Reports(views.APIView):
                     writer.writerow([ele[header] for header in headers])
                 return response
             result.update(
-                {"message": "success", "response": {"data": data, "download_all": "/reports_download/?download=true"}})
+                {"message": "Conversation data fetching success.", "status": "success",
+                 "response": {"data": data, "download_all": "/reports_download/?download=true"}})
         except Exception as e:
             result.update({"message": "error", "response": str(e)})
         # print("result", result)
