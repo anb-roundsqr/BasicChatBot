@@ -2442,6 +2442,7 @@ class Reports(views.APIView):
             else:
                 conv = list(Conversation.objects.all().filter(bot_query).filter(range_query).filter(
                 text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+            conv = list(dict.fromkeys(conv))
             for session_id in conv:
                 queryset = Conversation.objects.all().filter(session_id=session_id).order_by('id')
                 # conversation = []
