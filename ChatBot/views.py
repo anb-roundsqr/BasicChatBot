@@ -2462,8 +2462,8 @@ class Reports(views.APIView):
                 writer.writerow(["ChatBot Conversations Data"])
                 writer.writerow(headers)
                 for ele in data:
-                    writer.writerow([ele[header] for header in headers])
-                return response
+                    writer.writerow([str(ele[header]) for header in headers])
+                return resp
             result.update(
                 {"message": "Conversation data fetching success.", "status": "success",
                  "response": {"data": data, "download_all": "/reports_download/?download=true&customer_id=" + str(cust_id)}})
