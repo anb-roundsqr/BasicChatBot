@@ -2450,7 +2450,7 @@ class Reports(views.APIView):
                     #                      "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %I:%M %p")})
                     data.append(
                         {"session_id": session_id, "bot_name": cb_relation[0].bot.name, "source_url":
-                            cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %I:%M %p"),
+                            cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %H:%M"),
                          "sender": obj.sender, "message": obj.text, "download":
                              "/reports_download/?download=true&session_id=" + session_id + "&customer_id=" + str(cust_id)})
             if download == 'true':
