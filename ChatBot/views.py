@@ -2435,7 +2435,7 @@ class Reports(views.APIView):
                 conv = list(Conversation.objects.all().filter(bot_query).filter(range_query).filter(
                 text__in=questions).distinct('session_id').values_list('session_id', flat=True))
             for session_id in conv:
-                queryset = Conversation.objects.all().filter(sesison_id=session_id).order_by('id')
+                queryset = Conversation.objects.all().filter(session_id=session_id).order_by('id')
                 # conversation = []
                 for obj in queryset:
                     # conversation.append({"session_id": session_id, "sender": obj.sender, "message": obj.text,
