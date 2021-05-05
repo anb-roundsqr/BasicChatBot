@@ -2458,7 +2458,7 @@ class Reports(views.APIView):
                 resp = HttpResponse(content_type='text/csv')
                 resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
                     "%Y-%m-%dT%H.%M.%S") + '.csv"'
-                writer = csv.writer(response)
+                writer = csv.writer(resp)
                 writer.writerow(["ChatBot Conversations Data"])
                 writer.writerow(headers)
                 for ele in data:
