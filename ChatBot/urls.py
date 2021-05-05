@@ -45,4 +45,6 @@ urlpatterns = [
     path('configure_question_details/<int:pk>/', vu.BulkQuestionDetail.as_view()),
     path('customer_bots_configurations/', vu.CustomerBotsList.as_view()),
     path('customer_bots_configuration_details/<int:pk>/', vu.CustomerBotsDetail.as_view()),
+    path('reports/', vu.Reports.as_view()),
+    path('reports_download/', vu.Reports.as_view()),
 ]

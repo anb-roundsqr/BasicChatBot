@@ -44,6 +44,7 @@ from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
 from django.db.models import Q, Value, CharField, Count
 from django.http.request import QueryDict
+from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
 import re
 from django.core.files.storage import default_storage
@@ -62,6 +63,7 @@ import requests as rq
 from ChatBot.constants import COUNTRY_CHOICES_MAPPING
 from django.template.loader import get_template
 from django.conf import settings
+import csv
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -2397,3 +2399,65 @@ class CustomerBotsDetail(generics.RetrieveUpdateDestroyAPIView):
             res = serializer.save()
         except Exception as e:
             print(e)
+
+
+class Reports(views.APIView):
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+
+        result = {
+            "message": "Something went wrong.",
+            "status": "failed"
+        }
+        today = datetime.now()
+        try:
+            bot_id = request.query_params.get("bot_id", "")
+            download = request.query_params.get("download", "false")
+            s_id = request.query_params.get("session_id", "")
+            st_dt = request.query_params.get("start_date", "")
+            nd_dt = request.query_params.get("end_date", "")
+            start = datetime.strptime(st_dt, "%Y-%m-%d") if st_dt else None
+            end = datetime.strptime(nd_dt, "%Y-%m-%d") if nd_dt else today.date()
+            bot_query = Q(customer=auth_result["user"], bot_id=bot_id) if bot_id.isdigit() else Q(customer=auth_result["user"])
+            range_query = Q(time_stamp__date__range=[start, end]) if start else Q(time_stamp__date__lte=end)
+            data = []
+            cb_relation = CustomerBots.objects.all().filter(bot_query)
+            questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
+            if s_id:
+                conv = list(Conversation.objects.all().filter(session_id=s_id).values_list('session_id', flat=True))
+            else:
+                conv = list(Conversation.objects.all().filter(bot_query).filter(range_query).filter(
+                text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+            for session_id in conv:
+                queryset = Conversation.objects.all().filter(sesison_id=session_id).order_by('id')
+                # conversation = []
+                for obj in queryset:
+                    # conversation.append({"session_id": session_id, "sender": obj.sender, "message": obj.text,
+                    #                      "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %I:%M %p")})
+                    data.append({"session_id": session_id, "bot_name": cb_relation[0].bot.name,
+                                 "source_url": cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime(
+                            "%Y-%m-%d %I:%M %p"), "sender": obj.sender, "message": obj.text,
+                                 "download": "/reports_download/?download=true&session_id=" + session_id})
+            if download == 'true':
+                headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
+                resp = HttpResponse(content_type='text/csv')
+                resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
+                    "%Y-%m-%dT%H.%M.%S") + '.csv"'
+                writer = csv.writer(response)
+                writer.writerow(["ChatBot Conversations Data"])
+                writer.writerow(headers)
+                for ele in data:
+                    writer.writerow([ele[header] for header in headers])
+                return response
+            result.update(
+                {"message": "success", "response": {"data": data, "download_all": "/reports_download/?download=true"}})
+        except Exception as e:
+            result.update({"message": "error", "response": str(e)})
+        # print("result", result)
+        return response.Response(result)
