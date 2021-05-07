@@ -2452,8 +2452,8 @@ class Reports(views.APIView):
                     data.append(
                         {"session_id": session_id, "bot_name": cb_relation[0].bot.name, "source_url":
                             cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %H:%M"),
-                         "sender": obj.sender, "message": obj.text, "download":
-                             "/reports_download/?download=true&session_id=" + session_id + "&customer_id=" + str(cust_id)})
+                         "sender": obj.sender, "message": obj.text, "download": settings.BACKEND_URL +
+                         "/reports_download/?download=true&session_id=" + session_id + "&customer_id=" + str(cust_id)})
             if download == 'true':
                 headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
                 resp = HttpResponse(content_type='text/csv')
@@ -2467,7 +2467,8 @@ class Reports(views.APIView):
                 return resp
             result.update(
                 {"message": "Conversation data fetching success.", "status": "success",
-                 "response": {"data": data, "download_all": "/reports_download/?download=true&customer_id=" + str(cust_id)}})
+                 "response": {"data": data, "download_all":
+                     settings.BACKEND_URL + "/reports_download/?download=true&customer_id=" + str(cust_id)}})
         except Exception as e:
             result.update({"message": "error", "response": str(e)})
         # print("result", result)
