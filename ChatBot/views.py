@@ -1602,17 +1602,22 @@ class Analytics(views.APIView):
             "status": "failed"
         }
         try:
+            today = datetime.now()
             days_count = int(request.query_params.get("days_count", 30))
+            st_dt = request.query_params.get("start_date", "")
+            nd_dt = request.query_params.get("end_date", "")
+            end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt else today.date()
+            start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt else end_date - timedelta(days=days_count)
             # status = request.query_params.get("status", 'all')
             sender = request.query_params.get("sender", "")
             bot_id = request.query_params.get("bot_id", "")
             slug = kwargs["slug"]
             if slug == "session":
-                result.update(self.session_metrics(days_count, sender, bot_id))
+                result.update(self.session_metrics(start_date, end_date, sender, bot_id))
             elif slug == "leads":
-                result.update(self.leads_metrics(days_count, sender, bot_id))
+                result.update(self.leads_metrics(start_date, end_date, sender, bot_id))
             else:
-                result.update(self.chat_metrics(days_count, sender, bot_id))
+                result.update(self.chat_metrics(start_date, end_date, sender, bot_id))
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -1623,18 +1628,18 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def session_metrics(self, days_count, sender, bot_id=''):
+    def session_metrics(self, start_date, end_date, sender, bot_id):
         result = {
             "message": "",
             "status": "failed"
         }
         try:
-            current_date = datetime.now(tz=timezone.utc)
-            start_date = current_date - timedelta(days=days_count)
-            print('current_date', current_date.date())
-            print('start_date', start_date.date())
+            # end_date = datetime.now(tz=timezone.utc)
+            # start_date = end_date - timedelta(days=days_count)
+            # print('current_date', end_date.date())
+            # print('start_date', start_date.date())
             actual_dates = []
-            for i in range(days_count):
+            for i in range((start_date - end_date).days):
                 actual_dates.append(
                     datetime.strftime(
                         start_date + timedelta(days=i),
@@ -1642,7 +1647,7 @@ class Analytics(views.APIView):
                     )
                 )
             # print('actual_dates', actual_dates)
-            query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            query = Q(time_stamp__date__range=[start_date, end_date])
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
@@ -1699,29 +1704,30 @@ class Analytics(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def leads_metrics(self, days_count, sender, bot_id=''):
+    def leads_metrics(self, start_date, end_date, sender, bot_id):
         result = {
             "message": "",
             "status": "failed"
         }
         try:
-            current_date = datetime.now(tz=timezone.utc)
-            start_date = current_date - timedelta(days=days_count)
+            # end_date = datetime.now(tz=timezone.utc)
+            # start_date = current_date - timedelta(days=days_count)
             actual_dates = []
-            for i in range(days_count):
+            for i in range((start_date - end_date).days):
                 actual_dates.append(
                     datetime.strftime(
                         start_date + timedelta(days=i),
                         "%Y-%m-%d"
                     )
                 )
-            # query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            # query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=end_date.date())
             query = Q()
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
             questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
-            conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(text__in=questions).distinct('session_id').values_list('id', flat=True))
+            conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(text__in=questions).distinct(
+                'session_id').values_list('id', flat=True))
             qs = Conversation.objects.filter(id__in=conv)
             qsl = []
             for ele in qs:
@@ -1744,8 +1750,10 @@ class Analytics(views.APIView):
                         cnt += 1
                     idx += 1
             worldwide = len(qsl)
-            lead_qs = list(BotConfiguration.objects.all().filter(bot_query).filter(is_lead_gen_question=True).values_list('question', flat=True))
-            lead_conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(text__in=lead_qs).distinct('session_id').values_list('id', flat=True))
+            lead_qs = list(BotConfiguration.objects.all().filter(bot_query).filter(
+                is_lead_gen_question=True).values_list('question', flat=True))
+            lead_conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(
+                text__in=lead_qs).distinct('session_id').values_list('id', flat=True))
             leads = Conversation.objects.filter(id__in=lead_conv).count()
             result["message"] = "no graph data"
             if sessions:
@@ -1780,19 +1788,19 @@ class Analytics(views.APIView):
         }
         return result
 
-    def chat_metrics(self, days_count, sender, bot_id=''):
+    def chat_metrics(self, start_date, end_date, sender, bot_id):
 
         result = {
             "message": "",
             "status": "failed"
         }
         try:
-            current_date = datetime.now(tz=timezone.utc)
-            start_date = current_date - timedelta(days=days_count)
-            print('current_date', current_date.date())
-            print('start_date', start_date.date())
+            # end_date = datetime.now(tz=timezone.utc)
+            # start_date = end_date - timedelta(days=days_count)
+            # print('current_date', end_date.date())
+            # print('start_date', start_date.date())
             actual_dates = []
-            for i in range(days_count):
+            for i in range((start_date - end_date).days):
                 actual_dates.append(
                     datetime.strftime(
                         start_date + timedelta(days=i),
@@ -1800,7 +1808,7 @@ class Analytics(views.APIView):
                     )
                 )
             print('actual_dates', actual_dates)
-            query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=current_date.date())
+            query = Q(time_stamp__date__range=[start_date, end_date])
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
@@ -2428,12 +2436,14 @@ class Reports(views.APIView):
             bot_id = request.query_params.get("bot_id", "")
             download = request.query_params.get("download", "false")
             s_id = request.query_params.get("session_id", "")
+            days_count = int(request.query_params.get("days_count", 30))
             st_dt = request.query_params.get("start_date", "")
             nd_dt = request.query_params.get("end_date", "")
-            start = datetime.strptime(st_dt, "%Y-%m-%d") if st_dt else None
-            end = datetime.strptime(nd_dt, "%Y-%m-%d") if nd_dt else today.date()
+            end_date = datetime.strptime(nd_dt, "%Y-%m-%d") if nd_dt else today.date()
+            start_date = datetime.strptime(st_dt, "%Y-%m-%d") if st_dt else end_date - timedelta(days=days_count)
             bot_query = Q(customer=customer, bot_id=bot_id) if bot_id.isdigit() else Q(customer=customer)
-            range_query = Q(time_stamp__date__range=[start, end]) if start else Q(time_stamp__date__lte=end)
+            range_query = Q(time_stamp__date__range=[start_date, end_date]) if start_date else Q(
+                time_stamp__date__lte=end_date)
             data = []
             cb_relation = CustomerBots.objects.all().filter(bot_query)
             questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
