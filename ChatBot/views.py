@@ -64,6 +64,7 @@ from ChatBot.constants import COUNTRY_CHOICES_MAPPING
 from django.template.loader import get_template
 from django.conf import settings
 import csv
+import openpyxl
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -2462,9 +2463,11 @@ class Reports(views.APIView):
                     data.append(
                         {"session_id": session_id, "bot_name": cb_relation[0].bot.name, "source_url":
                             cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %H:%M"),
-                         "sender": obj.sender, "message": obj.text, "download": settings.BACKEND_URL +
-                         "/reports_download/?download=true&session_id=" + session_id + "&customer_id=" + str(cust_id)})
-            if download == 'true':
+                         "sender": obj.sender, "message": obj.text, "download_csv": settings.BACKEND_URL +
+                         "/reports_download/?download=csv&session_id=" + session_id + "&customer_id=" + str(cust_id)})
+                         # "download_excel": settings.BACKEND_URL + "/reports_download/?download=excel&session_id=" +
+                         # session_id + "&customer_id=" + str(cust_id)})
+            if download == 'csv':
                 headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
                 resp = HttpResponse(content_type='text/csv')
                 resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
@@ -2474,6 +2477,20 @@ class Reports(views.APIView):
                 writer.writerow(headers)
                 for ele in data:
                     writer.writerow([str(ele[header]) for header in headers])
+                return resp
+            elif download == 'excel':
+                resp = ''
+                resp = HttpResponse(content_type='application/ms-excel')
+                resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
+                    "%Y-%m-%dT%H.%M.%S") + '.xls"'
+                wb = openpyxl.Workbook()
+                ws = wb.create_sheet("reports")
+                row_num = 0
+                headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
+                for my_row in data:
+                    row_num = row_num + 1
+                    ws.write([str(my_row[header]) for header in headers])
+                wb.save(response)
                 return resp
             result.update(
                 {"message": "Conversation data fetching success.", "status": "success",
