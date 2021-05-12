@@ -2452,7 +2452,7 @@ class Reports(views.APIView):
                 conv = list(Conversation.objects.all().filter(session_id=s_id).values_list('session_id', flat=True))
             else:
                 conv = list(Conversation.objects.all().filter(bot_query).filter(range_query).filter(
-                text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+                    text__in=questions).distinct('session_id').values_list('session_id', flat=True))
             conv = list(dict.fromkeys(conv))
             for session_id in conv:
                 queryset = Conversation.objects.all().filter(session_id=session_id).order_by('id')
@@ -2464,11 +2464,11 @@ class Reports(views.APIView):
                         {"session_id": session_id, "bot_name": cb_relation[0].bot.name, "source_url":
                             cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %H:%M"),
                          "sender": obj.sender, "message": obj.text, "download_csv": settings.BACKEND_URL +
-                         "/reports_download/?download=csv&session_id=" + session_id + "&customer_id=" + str(cust_id)})
-                         # "download_excel": settings.BACKEND_URL + "/reports_download/?download=excel&session_id=" +
-                         # session_id + "&customer_id=" + str(cust_id)})
+                         "/reports_download/?download=csv&session_id=" + session_id + "&customer_id=" + str(cust_id),
+                         "download_excel": settings.BACKEND_URL + "/reports_download/?download=excel&session_id=" +
+                         session_id + "&customer_id=" + str(cust_id)})
+            headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
             if download == 'csv':
-                headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
                 resp = HttpResponse(content_type='text/csv')
                 resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
                     "%Y-%m-%dT%H.%M.%S") + '.csv"'
@@ -2479,23 +2479,21 @@ class Reports(views.APIView):
                     writer.writerow([str(ele[header]) for header in headers])
                 return resp
             elif download == 'excel':
-                resp = ''
                 resp = HttpResponse(content_type='application/ms-excel')
                 resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
-                    "%Y-%m-%dT%H.%M.%S") + '.xls"'
-                wb = openpyxl.Workbook()
-                ws = wb.create_sheet("reports")
-                row_num = 0
-                headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
+                    "%Y-%m-%dT%H.%M.%S") + '.xlsx"'
+                wb = openpyxl.Workbook(write_only=True)
+                ws = wb.create_sheet("ChatBot Conversations Data")
+                ws.append("ChatBot Conversations Data")
+                ws.append(headers)
                 for my_row in data:
-                    row_num = row_num + 1
-                    ws.write([str(my_row[header]) for header in headers])
-                wb.save(response)
+                    ws.append([str(my_row[header]) for header in headers])
+                wb.save(resp)
                 return resp
-            result.update(
-                {"message": "Conversation data fetching success.", "status": "success",
-                 "response": {"data": data, "download_all":
-                     settings.BACKEND_URL + "/reports_download/?download=true&customer_id=" + str(cust_id)}})
+            result.update({"message": "Conversation data fetching success.", "status": "success", "response": {
+                "data": data, "download_all_csv": settings.BACKEND_URL + "/reports_download/?download=csv&customer_id="
+                + str(cust_id),  "download_all_excel": settings.BACKEND_URL
+                + "/reports_download/?download=excel&customer_id=" + str(cust_id)}})
         except Exception as e:
             result.update({"message": "error", "response": str(e)})
         # print("result", result)
