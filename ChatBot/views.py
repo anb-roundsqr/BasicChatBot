@@ -2484,7 +2484,7 @@ class Reports(views.APIView):
                     "%Y-%m-%dT%H.%M.%S") + '.xlsx"'
                 wb = openpyxl.Workbook(write_only=True)
                 ws = wb.create_sheet("ChatBot Conversations Data")
-                ws.append("ChatBot Conversations Data")
+                ws.append(["ChatBot Conversations Data"])
                 ws.append(headers)
                 for my_row in data:
                     ws.append([str(my_row[header]) for header in headers])
