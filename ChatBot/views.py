@@ -1403,8 +1403,8 @@ class SessionAnalytics(views.APIView):
     def process_metrics(
             self,
             days_count,
-            latitude=None,
-            longitude=None,
+            latitude=0,
+            longitude=0,
             radius=None
     ):
 
