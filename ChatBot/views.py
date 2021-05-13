@@ -1604,11 +1604,16 @@ class Analytics(views.APIView):
         }
         try:
             today = datetime.now()
+            begin_day = Customers.objects.all().order_by('date_joined')[0].date_joined
             days_count = int(request.query_params.get("days_count", 30))
+            all_records = request.query_params.get("all", "false")
             st_dt = request.query_params.get("start_date", "")
             nd_dt = request.query_params.get("end_date", "")
-            end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt else today.date()
-            start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt else end_date - timedelta(days=days_count)
+            if all_records == 'true':
+                days_count = (today - begin_day).days
+            end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt and all_records != 'true' else today.date()
+            start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt and all_records != 'true' else \
+                end_date - timedelta(days=days_count)
             # status = request.query_params.get("status", 'all')
             sender = request.query_params.get("sender", "")
             bot_id = request.query_params.get("bot_id", "")
@@ -2437,11 +2442,16 @@ class Reports(views.APIView):
             bot_id = request.query_params.get("bot_id", "")
             download = request.query_params.get("download", "false")
             s_id = request.query_params.get("session_id", "")
+            begin_day = Customers.objects.all().order_by('date_joined')[0].date_joined
             days_count = int(request.query_params.get("days_count", 30))
+            all_records = request.query_params.get("all", "false")
             st_dt = request.query_params.get("start_date", "")
             nd_dt = request.query_params.get("end_date", "")
-            end_date = datetime.strptime(nd_dt, "%Y-%m-%d") if nd_dt else today.date()
-            start_date = datetime.strptime(st_dt, "%Y-%m-%d") if st_dt else end_date - timedelta(days=days_count)
+            if all_records == 'true':
+                days_count = (today - begin_day).days
+            end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt and all_records != 'true' else today.date()
+            start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt and all_records != 'true' else \
+                end_date - timedelta(days=days_count)
             bot_query = Q(customer=customer, bot_id=bot_id) if bot_id.isdigit() else Q(customer=customer)
             range_query = Q(time_stamp__date__range=[start_date, end_date]) if start_date else Q(
                 time_stamp__date__lte=end_date)
