@@ -1610,7 +1610,7 @@ class Analytics(views.APIView):
             st_dt = request.query_params.get("start_date", "")
             nd_dt = request.query_params.get("end_date", "")
             if all_records == 'true':
-                days_count = (today - begin_day).days
+                days_count = (today.date() - begin_day.date()).days
             end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt and all_records != 'true' else today.date()
             start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt and all_records != 'true' else \
                 end_date - timedelta(days=days_count)
@@ -2448,7 +2448,7 @@ class Reports(views.APIView):
             st_dt = request.query_params.get("start_date", "")
             nd_dt = request.query_params.get("end_date", "")
             if all_records == 'true':
-                days_count = (today - begin_day).days
+                days_count = (today.date() - begin_day.date()).days
             end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt and all_records != 'true' else today.date()
             start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt and all_records != 'true' else \
                 end_date - timedelta(days=days_count)
