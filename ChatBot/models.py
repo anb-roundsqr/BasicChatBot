@@ -137,8 +137,8 @@ class Conversation(models.Model):
     time_stamp = models.DateTimeField(auto_now_add=True)
     text = models.TextField()
     sender = models.CharField(max_length=10)
-    latitude = models.FloatField(default=0)
-    longitude = models.FloatField(default=0)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
     browser = models.TextField(null=True)
     update_date_time = models.DateTimeField()
 
