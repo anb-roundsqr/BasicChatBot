@@ -2126,7 +2126,7 @@ class ForgotPassword(views.APIView):
                         text_content=text_content, html_content=html_content)
             email_save(template_path, context, recipient, subject, result, 1)
             result.update({
-                "message": "password retrieved successfully",
+                "message": "Email sent successfully",
                 "status": "success"
             })
         except Admin.DoesNotExist:
