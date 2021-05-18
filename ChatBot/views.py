@@ -2072,52 +2072,37 @@ class TokenAuthentication(authentication.BaseAuthentication):
 class ForgotPassword(views.APIView):
 
     def get(self, request, **kwargs):
-        print("PATH_INFO", request.META["PATH_INFO"])
-        print("kwargs slug", kwargs)
-        result = {
-            "message": "",
-            "status": "failed"
-        }
+        # print("PATH_INFO", request.META["PATH_INFO"])
+        # print("kwargs slug", kwargs)
+        result = {"message": "", "status": "failed"}
         try:
-            email_id = self.validate_emailid(
-                request.query_params["email_id"].lower()
-            )  # requested_data)
-            if "HTTP_ORIGIN" in request.META:
-                WEB_HOST = request.META["HTTP_ORIGIN"]
-            else:
-                WEB_HOST = "%s://%s" % (
-                    request.META["wsgi.url_scheme"],
-                    request.META["HTTP_HOST"])
+            email_id = request.query_params["email_id"].lower()
+            if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email_id):
+                raise exceptions.ValidationError({"email": ["Invalid `%s` value." % email_id]})
             context = {
                 'point_of_contact': "",
                 'username': email_id,
                 'password': "",
-                'login_url': "%s/login" % WEB_HOST,
                 'official_signature': settings.ADMIN_NAME
             }
             if "admin" in request.META["PATH_INFO"]:
                 org_name = settings.ADMIN_ORG
                 user_info = Admin.objects.get(email_id=email_id)
                 context["point_of_contact"] = user_info.full_name
-                context["password"] = base64.b64decode(
-                    user_info.password
-                ).decode()
-            else:  # if "organizations" in request.META["PATH_INFO"]:
-                customer = Customers.objects.get(
-                    email_id=email_id,
-                    is_deleted=False
-                )
+                context["password"] = base64.b64decode(user_info.password).decode()
+                context["login_url"] = "%s/admin/login" % settings.FRONTEND_URL
+            else:
+                customer = Customers.objects.get(email_id=email_id, is_deleted=False)
                 customer.is_active = False
                 customer.save()
                 org_name = customer.org_name
                 context["point_of_contact"] = customer.name
-                context["password"] = base64.b64decode(
-                    customer.password).decode()
+                context["password"] = base64.b64decode(customer.password).decode()
+                context["login_url"] = "%s/customer/login" % settings.FRONTEND_URL
             template_path = "emails/forgot_password.html"
             txt_path = "emails/email.txt"
             recipient = email_id
             subject = "Your %s account password" % org_name
-            # send_email(template, context, recipient, subject, None)
             template = get_template(template_path)
             txt = get_template(txt_path)
             text_content = txt.render(context)
@@ -2125,19 +2110,13 @@ class ForgotPassword(views.APIView):
             send_emails(subject=subject, from_email="powerbot@roundsqr.net",  recipient_list=[recipient],
                         text_content=text_content, html_content=html_content)
             email_save(template_path, context, recipient, subject, result, 1)
-            result.update({
-                "message": "Email sent successfully",
-                "status": "success"
-            })
+            result.update({"message": "Email sent successfully", "status": "success"})
         except Admin.DoesNotExist:
             result["message"] = "invalid email_id"
         except Customers.DoesNotExist:
             result["message"] = "invalid email_id"
         except KeyError as e:
-            result.update({
-                "message": "API Error",
-                "response": {e.args[0]: "This field is required."}
-            })
+            result.update({"message": "API Error", "response": {e.args[0]: "This field is required."}})
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
         except Exception as e:
@@ -2145,15 +2124,7 @@ class ForgotPassword(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def validate_emailid(self, email_id):
-        if not re.match(
-            r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
-            email_id
-        ):
-            raise exceptions.ValidationError({
-                "email": ["Invalid `%s` value." % email_id]
-            })
-        return email_id
+
 
 
 class ClientSignup(CreateAPIView):
