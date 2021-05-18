@@ -2456,27 +2456,30 @@ class Reports(views.APIView):
             range_query = Q(time_stamp__date__range=[start_date, end_date]) if start_date else Q(
                 time_stamp__date__lte=end_date)
             data = []
-            cb_relation = CustomerBots.objects.all().filter(bot_query)
             questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
             if s_id:
-                conv = list(Conversation.objects.all().filter(session_id=s_id).values_list('session_id', flat=True))
+                conv = list(Conversation.objects.all().filter(session_id=s_id).distinct('session_id').values_list(
+                    'session_id', flat=True))
             else:
                 conv = list(Conversation.objects.all().filter(bot_query).filter(range_query).filter(
                     text__in=questions).distinct('session_id').values_list('session_id', flat=True))
             conv = list(dict.fromkeys(conv))
             for session_id in conv:
                 queryset = Conversation.objects.all().filter(session_id=session_id).order_by('id')
-                # conversation = []
-                for obj in queryset:
-                    # conversation.append({"session_id": session_id, "sender": obj.sender, "message": obj.text,
-                    #                      "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %I:%M %p")})
-                    data.append(
-                        {"session_id": session_id, "bot_name": cb_relation[0].bot.name, "source_url":
-                            cb_relation[0].source_url, "time_stamp": obj.time_stamp.strftime("%Y-%m-%d %H:%M"),
-                         "sender": obj.sender, "message": obj.text, "download_csv": settings.BACKEND_URL +
-                         "/reports_download/?download=csv&session_id=" + session_id + "&customer_id=" + str(cust_id),
-                         "download_excel": settings.BACKEND_URL + "/reports_download/?download=excel&session_id=" +
-                         session_id + "&customer_id=" + str(cust_id)})
+                cb_relation = CustomerBots.objects.all().filter(customer=queryset[0].customer, bot=queryset[0].bot)
+                raw_dict = dict(
+                    session_id=session_id, bot_name=cb_relation[0].bot.name, source_url=cb_relation[0].source_url,
+                    download_csv=settings.BACKEND_URL + "/reports_download/?download=csv&session_id=" + session_id +
+                    "&customer_id=" + str(cust_id), download_excel=settings.BACKEND_URL +
+                    "/reports_download/?download=excel&session_id=" + session_id + "&customer_id=" + str(cust_id))
+                if download in ['csv', 'excel']:
+                    for obj in queryset:
+                        raw_dict['time_stamp'] = obj.time_stamp.strftime("%Y-%m-%d %H:%M")
+                        raw_dict['sender'] = obj.sender
+                        raw_dict['message'] = obj.text
+                        data.append(raw_dict)
+                else:
+                    data.append(raw_dict)
             headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
             if download == 'csv':
                 resp = HttpResponse(content_type='text/csv')
@@ -2502,8 +2505,10 @@ class Reports(views.APIView):
                 return resp
             result.update({"message": "Conversation data fetching success.", "status": "success", "response": {
                 "data": data, "download_all_csv": settings.BACKEND_URL + "/reports_download/?download=csv&customer_id="
-                + str(cust_id),  "download_all_excel": settings.BACKEND_URL
-                + "/reports_download/?download=excel&customer_id=" + str(cust_id)}})
+                + str(cust_id) + "&bot_id=" + bot_id + "&start_date=" + start_date.strftime("%Y-%m-%d") +
+                "&end_date=" + end_date.strftime("%Y-%m-%d"),  "download_all_excel": settings.BACKEND_URL
+                + "/reports_download/?download=excel&customer_id=" + str(cust_id) + "&bot_id=" + bot_id +
+                "&start_date=" + start_date.strftime("%Y-%m-%d") + "&end_date=" + end_date.strftime("%Y-%m-%d")}})
         except Exception as e:
             result.update({"message": "error", "response": str(e)})
         # print("result", result)
