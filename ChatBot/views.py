@@ -2125,8 +2125,6 @@ class ForgotPassword(views.APIView):
         return response.Response(result)
 
 
-
-
 class ClientSignup(CreateAPIView):
     queryset = Customers.objects.all()
     serializer_class = CustomerCreateSerializer
@@ -2254,17 +2252,16 @@ class ConfigurationDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class BulkQuestionList(generics.ListCreateAPIView):
-    queryset = BulkQuestion.objects.all()
+    # queryset = BulkQuestion.objects.all()
     serializer_class = BulkQuestionSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get_queryset(self):
         token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(request)
+        auth_result = token_auth.authenticate(self.request)
         if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
-        return self.list(request, *args, **kwargs)
+            return response.Response(auth_result,)
+        cust_id = auth_result["user"].id
+        return BulkQuestion.objects.all().filter(mapping_id__customer_id=cust_id)
 
     def perform_create(self, serializer):
         token_auth = TokenAuthentication()
@@ -2275,6 +2272,7 @@ class BulkQuestionList(generics.ListCreateAPIView):
             )
         data = self.request.data
         ques = data.get('questions', [])
+        # Todo: if no ques or invalid mapping_id
         res = serializer.save()
         cust = res.mapping_id.customer
         bot = res.mapping_id.bot
