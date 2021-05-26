@@ -2261,7 +2261,11 @@ class BulkQuestionList(generics.ListCreateAPIView):
         if "error" in auth_result:
             return response.Response(auth_result,)
         cust_id = auth_result["user"].id
-        return BulkQuestion.objects.all().filter(mapping_id__customer_id=cust_id)
+        queryset = BulkQuestion.objects.all().filter(mapping_id__customer_id=cust_id)
+        mapping_id = self.request.query_params.get('mapping_id')
+        if mapping_id:
+            queryset = queryset.filter(mapping_id=mapping_id)
+        return queryset
 
     def perform_create(self, serializer):
         token_auth = TokenAuthentication()
