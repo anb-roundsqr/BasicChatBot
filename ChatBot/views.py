@@ -2251,93 +2251,6 @@ class ConfigurationDetail(generics.RetrieveUpdateDestroyAPIView):
         res = serializer.save()
 
 
-class BulkQuestionList(generics.ListCreateAPIView):
-    # queryset = BulkQuestion.objects.all()
-    serializer_class = BulkQuestionSerializer
-
-    def get_queryset(self):
-        token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(self.request)
-        if "error" in auth_result:
-            return response.Response(auth_result,)
-        cust_id = auth_result["user"].id
-        queryset = BulkQuestion.objects.all().filter(mapping_id__customer__id=cust_id)
-        mapping_id = self.request.query_params.get('mapping_id')
-        if mapping_id:
-            queryset = queryset.filter(mapping_id=mapping_id)
-        return queryset
-
-    def perform_create(self, serializer):
-        token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(self.request)
-        if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
-        data = self.request.data
-        ques = data.get('questions', [])
-        mapping_id = data.get('mapping_id')
-        # Todo: if no ques or invalid mapping_id
-        res = serializer.save()
-        res.mapping_id_id = mapping_id
-        res.save()
-        cust = res.mapping_id.customer
-        bot = res.mapping_id.bot
-        for que in ques:
-            conf = BotConfiguration.objects.create(
-                question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
-                suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
-                api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
-                related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
-                is_last_question=que['is_last_question'], customer=cust, bot=bot)
-            res.questions.add(conf)
-            res.save()
-
-
-class BulkQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = BulkQuestion.objects.all()
-    serializer_class = BulkQuestionSerializer
-
-    def perform_update(self, serializer):
-        token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(self.request)
-        if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
-        data = self.request.data
-        ques = data.get('questions', [])
-        res = serializer.save()
-        cust = res.mapping_id.customer
-        bot = res.mapping_id.bot
-        for que in ques:
-            try:
-                conf = BotConfiguration.objects.get(id=que['id'])
-                conf.question = que['question']
-                conf.answer_type = que['answer_type']
-                conf.suggested_answers = que['suggested_answers']
-                conf.suggested_jump = que['suggested_jump']
-                conf.fields = que['fields']
-                conf.api_name = que['api_name']
-                conf.number_of_params = que['number_of_params']
-                conf.required = que['required']
-                conf.related = que['related']
-                conf.is_lead_gen_question = que['is_lead_gen_question']
-                conf.is_last_question = que['is_last_question']
-                conf.customer = cust
-                conf.bot = bot
-                conf.save()
-            except Exception as e:
-                print(e)
-                conf = BotConfiguration.objects.create(
-                    question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
-                    suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
-                    api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
-                    related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
-                    is_last_question=que['is_last_question'], customer=cust, bot=bot)
-                res.questions.add(conf)
-
-
 class APIBulkQuestion(views.APIView):
     queryset = BulkQuestion.objects.all()
     serializer_class = BulkQuestionSerializer
@@ -2347,9 +2260,9 @@ class APIBulkQuestion(views.APIView):
         auth_result = token_auth.authenticate(self.request)
         if "error" in auth_result:
             return response.Response(auth_result,)
-        cust_id = auth_result["user"].id
-        cb_list = list(CustomerBots.objects.all().filter(customer_id=cust_id).values_list('id', flat=True))
-        queryset = BulkQuestion.objects.all().filter(mapping_id_id__in=cb_list)
+        # cust_id = auth_result["user"].id
+        # cb_list = list(CustomerBots.objects.all().filter(customer_id=cust_id).values_list('id', flat=True))
+        queryset = BulkQuestion.objects.all()  # .filter(mapping_id_id__in=cb_list)
         mapping_id = self.request.query_params.get('mapping_id')
         if mapping_id:
             queryset = queryset.filter(mapping_id=mapping_id)
