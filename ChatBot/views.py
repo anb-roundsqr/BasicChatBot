@@ -2252,8 +2252,6 @@ class ConfigurationDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class APIBulkQuestion(views.APIView):
-    queryset = BulkQuestion.objects.all()
-    serializer_class = BulkQuestionSerializer
 
     def get(self, request):
         token_auth = TokenAuthentication()
@@ -2404,6 +2402,84 @@ class CustomerBotsDetail(generics.RetrieveUpdateDestroyAPIView):
             res = serializer.save()
         except Exception as e:
             print(e)
+
+
+class APICustomerBots(views.APIView):
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        queryset = CustomerBots.objects.all()
+        serializer = CustomerBotRetrieveSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        user_id = auth_result["user"].id
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            data = self.request.data
+            bot = Bots.objects.get(id=data['bot'])
+            cust = Customers.objects.get(id=data['customer'])
+            bot_id_text = "%s%s" % (str(bot.name), str(bot.id).zfill(4))
+            cust_id_text = "%s_%s" % (str(cust.org_name), str(bot_id_text))
+            res = CustomerBots.objects.create(
+                created_by_id=user_id, updated_by_id=user_id, bot_type=data['bot_type'], source_url=data['source_url'],
+                customer_id_text=cust_id_text, bot_id_text=bot_id_text, customer=cust, bot=bot)
+            res.header_colour = data['header_colour'] if 'header_colour' in data else "#000000"
+            res.body_colour = data['body_colour'] if 'body_colour' in data else "#FFFFFF"
+            res.font_type = data['font_type'] if 'font_type' in data else "Arial, Helvitica"
+            res.bot_logo = data['bot_logo'] if 'bot_logo' in data else "static/images/default/bot_logo.png"
+            res.chat_logo = data['chat_logo'] if 'chat_logo' in data else "static/images/default/chat.png"
+            res.user_logo = data['user_logo'] if 'user_logo' in data else "static/images/default/user_logo.jpg"
+            res.bot_bubble_colour = data['bot_bubble_colour'] if 'bot_bubble_colour' in data else "#C0C0C0"
+            res.user_bubble_colour = data['user_bubble_colour'] if 'user_bubble_colour' in data else "#606060"
+            res.chat_bot_font_colour = data['chat_bot_font_colour'] if 'chat_bot_font_colour' in data else "#000000"
+            res.chat_user_font_colour=data['chat_user_font_colour'] if 'chat_user_font_colour' in data else "#FFFFFF"
+            res.save()
+            context['message'] = "Configuration added successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            if 'UNIQUE constraint' in str(e.args):
+                raise exceptions.ValidationError({"message": ["Customer with the bot already have a configuration."]})
+            else:
+                context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+    def put(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            data = self.request.data
+            res = CustomerBots.objects.get(id=data['id'])
+            res.header_colour = data['header_colour'] if 'header_colour' in data else res.header_colour
+            res.body_colour = data['body_colour'] if 'body_colour' in data else res.body_colour
+            res.font_type = data['font_type'] if 'font_type' in data else res.font_type
+            res.bot_logo = data['bot_logo'] if 'bot_logo' in data else res.bot_logo
+            res.chat_logo = data['chat_logo'] if 'chat_logo' in data else res.chat_logo
+            res.user_logo = data['user_logo'] if 'user_logo' in data else res.user_logo
+            res.bot_bubble_colour = data['bot_bubble_colour'] if 'bot_bubble_colour' in data else res.bot_bubble_colour
+            res.user_bubble_colour = data['user_bubble_colour'] if 'user_bubble_colour' in data else res.user_bubble_colour
+            res.chat_bot_font_colour = data['chat_bot_font_colour'] if 'chat_bot_font_colour' in data else res.chat_bot_font_colour
+            res.chat_user_font_colour = data['chat_user_font_colour'] if 'chat_user_font_colour' in data else res.chat_user_font_colour
+            res.save()
+            context['message'] = "Configuration updated successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
 
 
 class Reports(views.APIView):

@@ -42,8 +42,8 @@ urlpatterns = [
     path('bot_configurations/', vu.ConfigurationList.as_view()),
     path('bot_configuration_details/<int:pk>/', vu.ConfigurationDetail.as_view()),
     path('configure_questions/', vu.APIBulkQuestion.as_view()),
-    path('customer_bots_configurations/', vu.CustomerBotsList.as_view()),
-    path('customer_bots_configuration_details/<int:pk>/', vu.CustomerBotsDetail.as_view()),
+    path('customer_bots_configurations/', vu.APICustomerBots.as_view()),
+    # path('customer_bots_configuration_details/<int:pk>/', vu.CustomerBotsDetail.as_view()),
     path('reports/', vu.Reports.as_view()),
     path('reports_download/', vu.Reports.as_view()),
 ]

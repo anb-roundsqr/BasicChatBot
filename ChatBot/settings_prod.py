@@ -1,11 +1,11 @@
 from .settings_base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
+env.read_env()
 
-FRONTEND_URL = "https://app.chatbot.roundsqr.net"
-BACKEND_URL = "https://api.chatbot.roundsqr.net"
-
-ALLOWED_HOSTS = ['3.19.204.159', 'api.chatbot.roundsqr.net']
+FRONTEND_URL = env('FRONTEND_URL')
+BACKEND_URL = env('BACKEND_URL')
+ALLOWED_HOSTS = env('HOSTS').split(',')
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
