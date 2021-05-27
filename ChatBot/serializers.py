@@ -178,7 +178,7 @@ class QuestionListSerializer(serializers.ModelSerializer):
     class Meta:
 
         model = BotConfiguration
-        exclude = ['description', 'validation1', 'validation2', 'error_msg']
+        exclude = ['description']
         order_by = ['-id']
 
 

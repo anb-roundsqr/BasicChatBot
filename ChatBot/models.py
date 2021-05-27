@@ -180,7 +180,7 @@ class BotConfiguration(models.Model):
     is_first_question = models.BooleanField(default=False)
     is_last_question = models.BooleanField(default=False)
     is_lead_gen_question = models.BooleanField(default=False)
-    validation_custom = models.TextField(default='[]')
+    validation_type = models.TextField(default='[]')
     number_of_params = models.IntegerField(default=0)
     fields = models.TextField(default='[]')
     api_name = models.CharField(max_length=200, null=True, blank=True)
