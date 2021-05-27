@@ -58,7 +58,7 @@ import base64
 import jwt
 import uuid
 from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 import requests as rq
 from ChatBot.constants import COUNTRY_CHOICES_MAPPING
 from django.template.loader import get_template
@@ -2261,7 +2261,7 @@ class BulkQuestionList(generics.ListCreateAPIView):
         if "error" in auth_result:
             return response.Response(auth_result,)
         cust_id = auth_result["user"].id
-        queryset = BulkQuestion.objects.all().filter(mapping_id__customer_id=cust_id)
+        queryset = BulkQuestion.objects.all().filter(mapping_id__customer__id=cust_id)
         mapping_id = self.request.query_params.get('mapping_id')
         if mapping_id:
             queryset = queryset.filter(mapping_id=mapping_id)
@@ -2276,8 +2276,11 @@ class BulkQuestionList(generics.ListCreateAPIView):
             )
         data = self.request.data
         ques = data.get('questions', [])
+        mapping_id = data.get('mapping_id')
         # Todo: if no ques or invalid mapping_id
         res = serializer.save()
+        res.mapping_id_id = mapping_id
+        res.save()
         cust = res.mapping_id.customer
         bot = res.mapping_id.bot
         for que in ques:
@@ -2288,6 +2291,7 @@ class BulkQuestionList(generics.ListCreateAPIView):
                 related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
                 is_last_question=que['is_last_question'], customer=cust, bot=bot)
             res.questions.add(conf)
+            res.save()
 
 
 class BulkQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -2332,6 +2336,107 @@ class BulkQuestionDetail(generics.RetrieveUpdateDestroyAPIView):
                     related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
                     is_last_question=que['is_last_question'], customer=cust, bot=bot)
                 res.questions.add(conf)
+
+
+class APIBulkQuestion(views.APIView):
+    queryset = BulkQuestion.objects.all()
+    serializer_class = BulkQuestionSerializer
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        cust_id = auth_result["user"].id
+        cb_list = list(CustomerBots.objects.all().filter(customer_id=cust_id).values_list('id', flat=True))
+        queryset = BulkQuestion.objects.all().filter(mapping_id_id__in=cb_list)
+        mapping_id = self.request.query_params.get('mapping_id')
+        if mapping_id:
+            queryset = queryset.filter(mapping_id=mapping_id)
+        serializer = BulkQuestionSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        data = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            ques = data.get('questions', [])
+            mapping_id = data.get('mapping_id')
+            res = BulkQuestion.objects.create(mapping_id_id=mapping_id)
+            cust = res.mapping_id.customer
+            bot = res.mapping_id.bot
+            for que in ques:
+                conf = BotConfiguration.objects.create(
+                    question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
+                    suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                    api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
+                    related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                    is_last_question=que['is_last_question'], customer=cust, bot=bot)
+                res.questions.add(conf)
+                res.save()
+                context['message'] = "Questions uploaded successfully"
+                status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+    def put(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        data = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            obj_id = data.get('id')
+            ques = data.get('questions', [])
+            res = BulkQuestion.objects.get(id=obj_id)
+            cust = res.mapping_id.customer
+            bot = res.mapping_id.bot
+            for que in ques:
+                try:
+                    conf = BotConfiguration.objects.get(id=que['id'])
+                    conf.question = que['question']
+                    conf.answer_type = que['answer_type']
+                    conf.suggested_answers = que['suggested_answers']
+                    conf.suggested_jump = que['suggested_jump']
+                    conf.fields = que['fields']
+                    conf.api_name = que['api_name']
+                    conf.number_of_params = que['number_of_params']
+                    conf.required = que['required']
+                    conf.related = que['related']
+                    conf.is_lead_gen_question = que['is_lead_gen_question']
+                    conf.is_last_question = que['is_last_question']
+                    conf.customer = cust
+                    conf.bot = bot
+                    conf.save()
+                except Exception as e:
+                    print(e)
+                    conf = BotConfiguration.objects.create(
+                        question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
+                        suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                        api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
+                        related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                        is_last_question=que['is_last_question'], customer=cust, bot=bot)
+                    res.questions.add(conf)
+                    res.save()
+                context['message'] = "Questions updated successfully"
+                status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
 
 
 class CustomerBotsList(generics.ListCreateAPIView):
