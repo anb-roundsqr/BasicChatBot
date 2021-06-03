@@ -2232,7 +2232,7 @@ class APIConfiguration(views.APIView):
         status = 400
         try:
             conf = BotConfiguration.objects.create(
-                mapping_id_id=que['mapping_id'], question_id=que['question_id'], question=que['question'],
+                question_id=que['question_id'], question=que['question'],
                 answer_type=que['answer_type'], suggested_answers=que['suggested_answers'], api_name=que['api_name'],
                 suggested_jump=que['suggested_jump'], fields=que['fields'], number_of_params=que['number_of_params'],
                 required=que['required'], related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
