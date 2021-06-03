@@ -2211,44 +2211,75 @@ class BotList(views.APIView):
         return response.Response(context, status=200)
 
 
-class ConfigurationList(generics.ListCreateAPIView):
-    queryset = BotConfiguration.objects.all()
-    serializer_class = ClientQuestionSerializer
-    # filter_backends = [filters.OrderingFilter, filters.SearchFilter]
-    # ordering_fields = ['id', 'customer', 'bot']
-    # search_fields = ['^question', 'suggested_answers']
+class APIConfiguration(views.APIView):
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request):
         token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(request)
+        auth_result = token_auth.authenticate(self.request)
         if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
-        return self.list(request, *args, **kwargs)
+            return response.Response(auth_result,)
+        queryset = BotConfiguration.objects.all()
+        serializer = ClientQuestionSerializer(queryset, many=True)
+        return Response(serializer.data)
 
-    def perform_create(self, serializer):
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        que = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            conf = BotConfiguration.objects.create(
+                mapping_id_id=que['mapping_id'], question_id=que['question_id'], question=que['question'],
+                answer_type=que['answer_type'], suggested_answers=que['suggested_answers'], api_name=que['api_name'],
+                suggested_jump=que['suggested_jump'], fields=que['fields'], number_of_params=que['number_of_params'],
+                required=que['required'], related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                is_last_question=que['is_last_question'], error_msg=que['error_msg'], customer_id=que['customer'],
+                bot_id=que['bot'], validation1=que['validation1'], validation2=que['validation2'],
+                validation_type=que['validation_type'])
+            context['message'] = "Configuration created successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+    def put(self, request):
         token_auth = TokenAuthentication()
         auth_result = token_auth.authenticate(self.request)
         if "error" in auth_result:
             return response.Response(
                 auth_result,
             )
-        res = serializer.save()
-
-
-class ConfigurationDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = BotConfiguration.objects.all()
-    serializer_class = ClientQuestionSerializer
-
-    def perform_update(self, serializer):
-        token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(self.request)
-        if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
-        res = serializer.save()
+        que = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            conf = BotConfiguration.objects.get(id=que['id'])
+            conf.question = que['question'] if 'question' in que else conf.question
+            conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
+            conf.suggested_answers = que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+            conf.suggested_jump = que['suggested_jump'] if 'suggested_jump' in que else conf.suggested_jump
+            conf.fields = que['fields'] if 'fields' in que else conf.fields
+            conf.api_name = que['api_name'] if 'api_name' in que else conf.api_name
+            conf.number_of_params = que['number_of_params'] if 'number_of_params' in que else conf.number_of_params
+            conf.required = que['required'] if 'required' in que else conf.required
+            conf.related = que['related'] if 'related' in que else conf.related
+            conf.is_lead_gen_question = que['is_lead_gen_question'] if 'is_lead_gen_question' in que else conf.is_lead_gen_question
+            conf.is_last_question = que['is_last_question'] if 'is_last_question' in que else conf.is_last_question
+            conf.validation1 = que['validation1'] if 'validation1' in que else conf.validation1
+            conf.validation2 = que['validation2'] if 'validation2' in que else conf.validation2
+            conf.validation_type = que['validation_type'] if 'validation_type' in que else conf.validation_type
+            conf.error_msg = que['error_msg'] if 'error_msg' in que else conf.error_msg
+            conf.save()
+            context['message'] = "Configuration updated successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
 
 
 class APIBulkQuestion(views.APIView):
@@ -2271,9 +2302,7 @@ class APIBulkQuestion(views.APIView):
         token_auth = TokenAuthentication()
         auth_result = token_auth.authenticate(self.request)
         if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
+            return response.Response(auth_result,)
         data = self.request.data
         context = {"message": "Something went wrong"}
         status = 400
@@ -2303,9 +2332,7 @@ class APIBulkQuestion(views.APIView):
         token_auth = TokenAuthentication()
         auth_result = token_auth.authenticate(self.request)
         if "error" in auth_result:
-            return response.Response(
-                auth_result,
-            )
+            return response.Response(auth_result,)
         data = self.request.data
         context = {"message": "Something went wrong"}
         status = 400
@@ -2318,17 +2345,21 @@ class APIBulkQuestion(views.APIView):
             for que in ques:
                 try:
                     conf = BotConfiguration.objects.get(id=que['id'])
-                    conf.question = que['question']
-                    conf.answer_type = que['answer_type']
-                    conf.suggested_answers = que['suggested_answers']
-                    conf.suggested_jump = que['suggested_jump']
-                    conf.fields = que['fields']
-                    conf.api_name = que['api_name']
-                    conf.number_of_params = que['number_of_params']
-                    conf.required = que['required']
-                    conf.related = que['related']
-                    conf.is_lead_gen_question = que['is_lead_gen_question']
-                    conf.is_last_question = que['is_last_question']
+                    conf.question = que['question'] if 'question' in que else conf.question
+                    conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
+                    conf.suggested_answers = que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+                    conf.suggested_jump = que['suggested_jump'] if 'suggested_jump' in que else conf.suggested_jump
+                    conf.fields = que['fields'] if 'fields' in que else conf.fields
+                    conf.api_name = que['api_name'] if 'api_name' in que else conf.api_name
+                    conf.number_of_params = que['number_of_params'] if 'number_of_params' in que else conf.number_of_params
+                    conf.required = que['required'] if 'required' in que else conf.required
+                    conf.related = que['related'] if 'related' in que else conf.related
+                    conf.is_lead_gen_question = que['is_lead_gen_question'] if 'is_lead_gen_question' in que else conf.is_lead_gen_question
+                    conf.is_last_question = que['is_last_question'] if 'is_last_question' in que else conf.is_last_question
+                    conf.validation1 = que['validation1'] if 'validation1' in que else conf.validation1
+                    conf.validation2 = que['validation2'] if 'validation2' in que else conf.validation2
+                    conf.validation_type = que['validation_type'] if 'validation_type' in que else conf.validation_type
+                    conf.error_msg = que['error_msg'] if 'error_msg' in que else conf.error_msg
                     conf.customer = cust
                     conf.bot = bot
                     conf.save()
@@ -2348,60 +2379,6 @@ class APIBulkQuestion(views.APIView):
             print(e)
             context['message'] = str(e)
         return HttpResponse(json.dumps(context), status=status, content_type='application/json')
-
-
-class CustomerBotsList(generics.ListCreateAPIView):
-    queryset = CustomerBots.objects.all()
-    serializer_class = CustomerBotRetrieveSerializer
-
-    def get(self, request, *args, **kwargs):
-        token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(request)
-        if "error" in auth_result:
-            return response.Response(auth_result,)
-        return self.list(request, *args, **kwargs)
-
-    def perform_create(self, serializer):
-        token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(self.request)
-        if "error" in auth_result:
-            return response.Response(auth_result,)
-        try:
-            data = self.request.data
-            bot = Bots.objects.get(id=data['bot'])
-            cust = Customers.objects.get(id=data['customer'])
-            bot_id_text = "%s%s" % (str(bot.name), str(bot.id).zfill(4))
-            cust_id_text = "%s_%s" % (str(cust.org_name), str(bot_id_text))
-            serializer.validated_data['customer_id_text'] = cust_id_text
-            serializer.validated_data['bot_id_text'] = bot_id_text
-            res = serializer.save()
-        except Exception as e:
-            if 'UNIQUE constraint' in str(e.args):
-                raise exceptions.ValidationError({"message": ["Customer with the bot already have a configuration."]})
-            else:
-                raise exceptions.ValidationError({"message": [str(e)]})
-
-
-class CustomerBotsDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = CustomerBots.objects.all()
-    serializer_class = CustomerBotRetrieveSerializer
-
-    def perform_update(self, serializer):
-        token_auth = TokenAuthentication()
-        auth_result = token_auth.authenticate(self.request)
-        if "error" in auth_result:
-            return response.Response(auth_result,)
-        try:
-            data = self.request.data
-            bot = Bots.objects.get(id=data['bot'])
-            cust = Customers.objects.get(id=data['customer'])
-            bot_id_text = "%s%s" % (str(bot.name), str(bot.id).zfill(4))
-            cust_id_text = "%s_%s" % (str(cust.org_name), str(bot_id_text))
-            serializer.validated_data['customer_id_text'] = cust_id_text
-            serializer.validated_data['bot_id_text'] = bot_id_text
-            res = serializer.save()
-        except Exception as e:
-            print(e)
 
 
 class APICustomerBots(views.APIView):
