@@ -2518,10 +2518,10 @@ class Reports(views.APIView):
                     "/reports_download/?download=excel&session_id=" + session_id + "&customer_id=" + str(cust_id))
                 if download in ['csv', 'excel']:
                     for obj in queryset:
-                        raw_dict['time_stamp'] = obj.time_stamp.strftime("%Y-%m-%d %H:%M")
-                        raw_dict['sender'] = obj.sender
-                        raw_dict['message'] = obj.text
-                        data.append(raw_dict)
+                        query_dict = dict(
+                            session_id=session_id, bot_name=cb_relation[0].bot.name, sender=obj.sender, message=obj.text,
+                            source_url=cb_relation[0].source_url, time_stamp=obj.time_stamp.strftime("%Y-%m-%d %H:%M"))
+                        data.append(query_dict)
                 else:
                     data.append(raw_dict)
             headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
