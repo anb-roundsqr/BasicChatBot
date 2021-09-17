@@ -1,23 +1,11 @@
 import os
 import sys
 import json
-import smtplib
-import base64
-# from django.core.mail import send_mail
-# from django.template import Context
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from django.template.loader import get_template
 from datetime import datetime
 from django.utils import timezone
 from bson.objectid import ObjectId
-from .constants import (
-    EMAIL_HOST,
-    EMAIL_PORT,
-    EMAIL_HOST_USER,
-    EMAIL_HOST_PASSWORD,
-)
 from .models import EmailStatus
+from django.core.mail import send_mail
 
 
 def time_stamp_to_date_format(date_from_db):
@@ -40,7 +28,6 @@ def exception_handler(e):
     #         str(exc_obj.tb_lineno), file_name, file_app)
     # )
     print("exception", e.args[0])
-    print(type(e.args[0]))
     exc_loc = "exception in %sth line in %s file of %s application" % (
             str(exc_obj.tb_lineno),
             file_name,
@@ -99,19 +86,12 @@ def exception_handler(e):
 
 
 def process_api_exception(e, result):
-    # print("exception args", e.args)
-    # print("exception default details", e.default_detail)
-    # print("exception default code", e.default_code)
     print("exception details", e.detail)
-    # print("exception codes", e.get_codes())
-    # print("exception full details", e.get_full_details())
     print("type of exception details", type(e.detail))
     if isinstance(e.detail, list):
         result["message"] = e.detail[0]
     else:
         print("ReturnDict" in str(type(e.detail)))
-        # print("type of e detail", type(e.detail.items()))
-        # print("e detail items", e.detail.items())
         result["message"] = "API Error"
         a = {}
         for key, value in e.detail.items():
@@ -183,6 +163,7 @@ def email_save(template, context, recipient, subject, result,
                 subject=subject,
                 status=result["status"],
                 created_by_id=event_by,
+                updated_by_id=event_by,
                 date_created=datetime.now(tz=timezone.utc)
             ).save()
         else:
@@ -199,65 +180,16 @@ def email_save(template, context, recipient, subject, result,
     return result
 
 
-def send_email(template_path, context, recipient, subject,
-               event_by, status_id=None):
+def send_emails(subject, from_email, recipient_list, text_content, html_content=None):
+    if isinstance(recipient_list, str):
+        if recipient_list[0] == '[':
+            recipient_list = recipient_list.replace('[', '').replace(']', '').split(', ')
+        recipient_list = recipient_list.split(',')
     result = {}
     try:
-        recipients = [recipient]
-        bcc = []
-        # bcc = ['mark.mortimer@firstmatch.org']
-        cc = ['firstmatch.adelphoi@gmail.com']
-        # cc = []
-        message = MIMEMultipart()
-        template = get_template(template_path)  # getting template
-        html = template.render(context)  # render html
-        message["From"] = "powerbot@roundsqr.net"
-        message["To"] = recipient
-        message["Subject"] = subject
-        if cc:
-            # Recommended for mass emails
-            message["Cc"] = "%s\r\n" % ",".join(cc)
-            recipients.extend(cc)
-        if bcc:
-            # Recommended for mass emails
-            # message["Bcc"] = "%s\r\n" % ",".join(bcc)
-            recipients.extend(bcc)
-        part1 = MIMEText(html, 'html')
-        message.attach(part1)
-        smtp_server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
-        smtp_server.ehlo()
-        smtp_server.starttls()
-        smtp_server.ehlo()
-        print("user", base64.b64decode(EMAIL_HOST_USER).decode())
-        smtp_server.login(
-            base64.b64decode(EMAIL_HOST_USER).decode(),
-            base64.b64decode(EMAIL_HOST_PASSWORD).decode()
-        )
-        print("login done")
-        email_status = smtp_server.sendmail(
-            base64.b64decode(EMAIL_HOST_USER).decode(),
-            recipients,
-            message.as_string()
-        )
-        print("mail sent")
-        print("email_status", email_status)
-        smtp_server.close()
-
-        # subject = 'Thank you for registering to our site'
-        # message = ' it  means a world to us '
-        # email_from = settings.EMAIL_HOST_USER
-        # recipient_list = ['adinarayana.bandari@roundsqr.net', ]
-        # send_mail(subject, message, email_from, recipient_list)
+        send_mail(subject=subject, message=text_content, from_email=from_email, recipient_list=recipient_list,
+                  fail_silently=False, html_message=html_content,)
         result.update({"status": "success", "message": "mail sent"})
     except Exception as e:
         result.update(exception_handler(e))
-    print("email result", result)
-    email_save(
-        template_path,
-        context,
-        recipient,
-        subject,
-        result,
-        event_by,
-        status_id)
     return result

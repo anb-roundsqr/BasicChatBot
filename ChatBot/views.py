@@ -1,11 +1,11 @@
-from rest_framework import views, response, exceptions, renderers, viewsets, decorators, authentication
+from rest_framework import views, response, exceptions, renderers, viewsets, decorators, authentication, generics
 from datetime import datetime, timedelta
 from django.utils import timezone
 from ChatBot.functions import (
     process_api_exception,
     exception_handler,
     time_stamp_to_date_format,
-    send_email
+    send_emails, email_save
 )
 from ChatBot.models import (
     BotConfiguration,
@@ -13,7 +13,8 @@ from ChatBot.models import (
     Admin,
     Customers,
     CustomerBots,
-    Conversation
+    Conversation,
+    BulkQuestion
 )
 from ChatBot.serializers import (
     ClientQuestionSerializer,
@@ -33,6 +34,7 @@ from ChatBot.serializers import (
     CustomerBotCreateSerializer,
     CustomerBotRetrieveSerializer,
     CustomerBotUpdateSerializer,
+    BulkQuestionSerializer,
 )
 import json
 from geoip import geolite2
@@ -40,7 +42,9 @@ from itertools import groupby
 # from django.core.serializers.json import DjangoJSONEncoder
 from bson.json_util import dumps
 from django.db.models.expressions import RawSQL
+from django.db.models import Q, Value, CharField, Count
 from django.http.request import QueryDict
+from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
 import re
 from django.core.files.storage import default_storage
@@ -54,7 +58,13 @@ import base64
 import jwt
 import uuid
 from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+import requests as rq
+from ChatBot.constants import COUNTRY_CHOICES_MAPPING
+from django.template.loader import get_template
+from django.conf import settings
+import csv
+import openpyxl
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -108,7 +118,8 @@ class CustomerViewSet(viewsets.ViewSet):
                 context=serializer_context)
             customer_serializer.is_valid(raise_exception=True)
             customer_serializer.save()
-            template = "emails/customer_register.html"
+            template_path = "emails/customer_register.html"
+            txt_path = "emails/email.txt"
             context = {
                 'point_of_contact': customer_serializer.data["name"],
                 'org_name': requested_data["org_name"],
@@ -119,13 +130,14 @@ class CustomerViewSet(viewsets.ViewSet):
             }
             recipient = requested_data["email_id"]
             subject = "Congrats RoundSqr Customer"
-            send_email(
-                template,
-                context,
-                recipient,
-                subject,
-                1,  # auth_result["user"].id
-            )
+            # send_email(template, context, recipient, subject, 1, auth_result["user"].id)
+            template = get_template(template_path)
+            txt = get_template(txt_path)
+            text_content = txt.render(context)
+            html_content = template.render(context)
+            send_emails(subject=subject, from_email="powerbot@roundsqr.net", recipient_list=[recipient],
+                        text_content=text_content, html_content=html_content)
+            email_save(template_path, context, recipient, subject, result, 1, 1)
             result.update({
                 "message": "customer created",
                 "status": "success",
@@ -474,6 +486,7 @@ class CustomerBotViewSet(viewsets.ViewSet):
             "message": "",
             "status": "failed"
         }
+        bot_serializer = CustomerBotCreateSerializer(data="")
         try:
             if isinstance(request.data, QueryDict):
                 request.data._mutable = True
@@ -512,7 +525,10 @@ class CustomerBotViewSet(viewsets.ViewSet):
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
             if "customer_id_text" in result["response"]:
-                result["response"] = {"customer_bot": "mapping already existed."}
+                cb_data = CustomerBots.objects.filter(
+                    customer_id=bot_serializer.data['customer'], bot_id=bot_serializer.data['bot'])
+                cb = cb_data[0].id if cb_data else None
+                result["response"] = {"mapping_id": str(cb), "customer_bot": "mapping already existed."}
         except Exception as e:
             result.update(exception_handler(e))
         print("result", result)
@@ -771,7 +787,8 @@ class ClientConfiguration(views.APIView):
                         if question['answer_type'].lower() in [
                             'select',
                             'checkbox',
-                            'radio'
+                            'radio',
+                            'action'
                         ]:
                             question_obj.suggested_answers = question[
                                 "suggested_answers"
@@ -1213,6 +1230,7 @@ class ClientForm(views.APIView):
                     if match:
                         con_obj.latitude = match.location[0]
                         con_obj.longitude = match.location[1]
+                        con_obj.country = match.country
                     con_obj.update_date_time = datetime.now(tz=timezone.utc)
                     con_obj.save()
                 else:
@@ -1385,8 +1403,8 @@ class SessionAnalytics(views.APIView):
     def process_metrics(
             self,
             days_count,
-            latitude=None,
-            longitude=None,
+            latitude=0,
+            longitude=0,
             radius=None
     ):
 
@@ -1585,10 +1603,27 @@ class Analytics(views.APIView):
             "status": "failed"
         }
         try:
-            days_count = 30
-            if "days_count" in request.query_params:
-                days_count = int(request.query_params["days_count"])
-            result.update(self.process_metrics(days_count, kwargs["slug"]))
+            today = datetime.now()
+            begin_day = Customers.objects.all().order_by('date_joined')[0].date_joined
+            days_count = int(request.query_params.get("days_count", 30))
+            all_records = request.query_params.get("all", "false")
+            st_dt = request.query_params.get("start_date", "")
+            nd_dt = request.query_params.get("end_date", "")
+            if all_records == 'true':
+                days_count = (today.date() - begin_day.date()).days
+            end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt and all_records != 'true' else today.date()
+            start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt and all_records != 'true' else \
+                end_date - timedelta(days=days_count)
+            # status = request.query_params.get("status", 'all')
+            sender = request.query_params.get("sender", "")
+            bot_id = request.query_params.get("bot_id", "")
+            slug = kwargs["slug"]
+            if slug == "session":
+                result.update(self.session_metrics(start_date, end_date, sender, bot_id))
+            elif slug == "leads":
+                result.update(self.leads_metrics(start_date, end_date, sender, bot_id))
+            else:
+                result.update(self.chat_metrics(start_date, end_date, sender, bot_id))
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -1599,19 +1634,179 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def process_metrics(self, days_count, graph_type):
+    def session_metrics(self, start_date, end_date, sender, bot_id):
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            # end_date = datetime.now(tz=timezone.utc)
+            # start_date = end_date - timedelta(days=days_count)
+            # print('current_date', end_date.date())
+            # print('start_date', start_date.date())
+            actual_dates = []
+            for i in range((start_date - end_date).days):
+                actual_dates.append(
+                    datetime.strftime(
+                        start_date + timedelta(days=i),
+                        "%Y-%m-%d"
+                    )
+                )
+            # print('actual_dates', actual_dates)
+            query = Q(time_stamp__date__range=[start_date, end_date])
+            if sender:
+                query &= Q(sender=sender)
+            bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
+            questions = list(BotConfiguration.objects.all().filter(bot_query).filter(is_last_question=True).values_list('question', flat=True))
+            conv = list(Conversation.objects.all().filter(bot_query).filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+            complt = Q(session_id__in=conv)
+            ncomp = ~Q(session_id__in=conv)
+            qs1id = list(Conversation.objects.filter(query, complt).distinct('session_id').values_list('id', flat=True))
+            qs2id = list(Conversation.objects.filter(query, ncomp).distinct('session_id').values_list('id', flat=True))
+            qs1 = Conversation.objects.filter(id__in=qs1id)
+            qs2 = Conversation.objects.filter(id__in=qs2id)
+            q1j = qs1.values('time_stamp__date').annotate(completed=Count('time_stamp__date'))
+            q2j = qs2.values('time_stamp__date').annotate(incomplete=Count('time_stamp__date'))
+            qs = []
+            for ele in q1j:
+                obj = {"date": ele['time_stamp__date'].strftime('%Y-%m-%d'), "completed": ele['completed'], "incomplete": 0}
+                qs.append(obj)
+            for ele in q2j:
+                obj = {"date": ele['time_stamp__date'].strftime('%Y-%m-%d'), "completed": 0, "incomplete": ele['incomplete']}
+                qs.append(obj)
+            sessions = []
+            cnt = 0
+            for obj in qs:
+                if not sessions:
+                    sessions.append(obj)
+                    cnt += 1
+                idx = 1
+                for ele in sessions:
+                    if ele['date'] == obj['date']:
+                        ele['completed'] += obj['completed']
+                        ele['incomplete'] += ele['incomplete']
+                        continue
+                    elif cnt == idx:
+                        sessions.append(obj)
+                        cnt += 1
+                    idx += 1
+            result["message"] = "no graph data"
+            if sessions:
+                existed_dates = [record["date"] for record in sessions]
+                # print('existed_dates', existed_dates)
+                for ac_date in actual_dates:
+                    if ac_date not in existed_dates:
+                        sessions.append({"date": ac_date, "completed": 0, "incomplete": 0})
+                sessions.sort(key=lambda x: x['date'])
+                result.update({
+                    "message": "graph data",
+                    "status": "success",
+                    "response": sessions
+                })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            print("exception")
+            result.update(exception_handler(e))
+        return result
+
+    def leads_metrics(self, start_date, end_date, sender, bot_id):
+        result = {
+            "message": "",
+            "status": "failed"
+        }
+        try:
+            # end_date = datetime.now(tz=timezone.utc)
+            # start_date = current_date - timedelta(days=days_count)
+            actual_dates = []
+            for i in range((start_date - end_date).days):
+                actual_dates.append(
+                    datetime.strftime(
+                        start_date + timedelta(days=i),
+                        "%Y-%m-%d"
+                    )
+                )
+            # query = Q(time_stamp__date__gte=start_date.date(), time_stamp__date__lt=end_date.date())
+            query = Q()
+            if sender:
+                query &= Q(sender=sender)
+            bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
+            questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
+            conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(text__in=questions).distinct(
+                'session_id').values_list('id', flat=True))
+            qs = Conversation.objects.filter(id__in=conv)
+            qsl = []
+            for ele in qs:
+                country = COUNTRY_CHOICES_MAPPING.get(ele.country, "India")
+                obj = {"country": country, "count": 0, "lat": str(ele.latitude), "long": str(ele.longitude)}
+                qsl.append(obj)
+            sessions = []
+            cnt = 0
+            for obj in qsl:
+                if not sessions:
+                    sessions.append(obj)
+                    cnt += 1
+                idx = 1
+                for ele in sessions:
+                    if ele['country'] == obj['country']:
+                        ele['count'] += 1
+                        continue
+                    elif cnt == idx:
+                        sessions.append(obj)
+                        cnt += 1
+                    idx += 1
+            worldwide = len(qsl)
+            lead_qs = list(BotConfiguration.objects.all().filter(bot_query).filter(
+                is_lead_gen_question=True).values_list('question', flat=True))
+            lead_conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(
+                text__in=lead_qs).distinct('session_id').values_list('id', flat=True))
+            leads = Conversation.objects.filter(id__in=lead_conv).count()
+            result["message"] = "no graph data"
+            if sessions:
+                result.update({
+                    "message": "graph data",
+                    "status": "success",
+                    "worldwide": worldwide,
+                    "leads": leads,
+                    "countries": sessions
+                })
+        except exceptions.APIException as e:
+            result = process_api_exception(e, result)
+        except Exception as e:
+            print("exception")
+            result.update(exception_handler(e))
+        return result
+
+    def leads_metrics_old(self):
+        result = {
+            "message": "graph data",
+            "status": "success",
+            "leads": 800,
+            "companies": {
+                "worldwide": 500,
+                "Asia": 130,
+                "Africa": 90,
+                "North America": 80,
+                "South America": 40,
+                "Australia": 70,
+                "Europe": 90,
+            },
+        }
+        return result
+
+    def chat_metrics(self, start_date, end_date, sender, bot_id):
 
         result = {
             "message": "",
             "status": "failed"
         }
         try:
-            current_date = datetime.now(tz=timezone.utc)
-            start_date = current_date - timedelta(days=days_count)
-            print('current_date', current_date.date())
-            print('start_date', start_date.date())
+            # end_date = datetime.now(tz=timezone.utc)
+            # start_date = end_date - timedelta(days=days_count)
+            # print('current_date', end_date.date())
+            # print('start_date', start_date.date())
             actual_dates = []
-            for i in range(days_count):
+            for i in range((start_date - end_date).days):
                 actual_dates.append(
                     datetime.strftime(
                         start_date + timedelta(days=i),
@@ -1619,20 +1814,20 @@ class Analytics(views.APIView):
                     )
                 )
             print('actual_dates', actual_dates)
-            sessions = Conversation.objects.filter(
-                time_stamp__date__gte=start_date.date(),
-                time_stamp__date__lt=current_date.date()
-            ).values('time_stamp')
-            sessions = json.loads(dumps(sessions))
-            print('sessions', sessions)
+            query = Q(time_stamp__date__range=[start_date, end_date])
+            if sender:
+                query &= Q(sender=sender)
+            bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
+            chats = Conversation.objects.all().filter(bot_query).filter(query).values('time_stamp')
+            chats = json.loads(dumps(chats))
             result["message"] = "no graph data"
-            if sessions:
-                for session in sessions:
-                    session["name"] = time_stamp_to_date_format(
-                        session["time_stamp"]["$date"]
+            if chats:
+                for chat in chats:
+                    chat["name"] = time_stamp_to_date_format(
+                        chat["time_stamp"]["$date"]
                     ).split()[0]
-                    del session["time_stamp"]
-                graph_data = unique_and_count(sessions)
+                    del chat["time_stamp"]
+                graph_data = unique_and_count(chats)
                 existed_dates = [record["name"] for record in graph_data]
                 print('existed_dates', existed_dates)
                 for ac_date in actual_dates:
@@ -1662,16 +1857,16 @@ def register_admin(request):
         "message": "admin already existed",
         "status": "failed"
     }
-    email_id = "raja@roundsqr.com"
-    mobile = 9959047000
+    email_id = settings.ADMIN_EMAIL
+    mobile = settings.ADMIN_PHONE
+    name = settings.ADMIN_NAME
+    password = settings.ADMIN_PASS
     admin_info = Admin.objects.filter(mobile=mobile, email_id=email_id)
     if not admin_info:
-        characters = string.ascii_letters + string.digits
-        password = "".join(
-            choice(characters) for x in range(randint(8, 16))
-        )
+        # characters = string.ascii_letters + string.digits
+        # password = "".join(choice(characters) for x in range(randint(8, 16)))
         admin_obj = Admin()
-        admin_obj.name = "Raja Devarakonda"
+        admin_obj.name = name
         admin_obj.email_id = email_id
         admin_obj.mobile = mobile
         admin_obj.password = base64.b64encode(bytes(password.encode())).decode()
@@ -1877,80 +2072,57 @@ class TokenAuthentication(authentication.BaseAuthentication):
 class ForgotPassword(views.APIView):
 
     def get(self, request, **kwargs):
-        print("PATH_INFO", request.META["PATH_INFO"])
-        print("kwargs slug", kwargs)
-        result = {
-            "message": "",
-            "status": "failed"
-        }
+        # print("PATH_INFO", request.META["PATH_INFO"])
+        # print("kwargs slug", kwargs)
+        result = {"message": "", "status": "failed"}
         try:
-            email_id = self.validate_emailid(
-                request.query_params["email_id"].lower()
-            )  # requested_data)
-            if "HTTP_ORIGIN" in request.META:
-                WEB_HOST = request.META["HTTP_ORIGIN"]
-            else:
-                WEB_HOST = "%s://%s" % (
-                    request.META["wsgi.url_scheme"],
-                    request.META["HTTP_HOST"])
+            email_id = request.query_params["email_id"].lower()
+            if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email_id):
+                raise exceptions.ValidationError({"email": ["Invalid `%s` value." % email_id]})
             context = {
                 'point_of_contact': "",
                 'username': email_id,
                 'password': "",
-                'login_url': "%s/login" % WEB_HOST,
-                'official_signature': 'RAJA DEVARAKONDA'
+                'official_signature': settings.ADMIN_NAME
             }
             if "admin" in request.META["PATH_INFO"]:
-                org_name = "RoundSqr"
+                org_name = settings.ADMIN_ORG
                 user_info = Admin.objects.get(email_id=email_id)
                 context["point_of_contact"] = user_info.full_name
-                context["password"] = base64.b64decode(
-                    user_info.password
-                ).decode()
-            else:  # if "organizations" in request.META["PATH_INFO"]:
-                customer = Customers.objects.get(
-                    email_id=email_id,
-                    is_deleted=False
-                )
+                context["password"] = base64.b64decode(user_info.password).decode()
+                context["login_url"] = "%s/admin/login" % settings.FRONTEND_URL
+            else:
+                customer = Customers.objects.get(email_id=email_id, is_deleted=False)
                 customer.is_active = False
                 customer.save()
                 org_name = customer.org_name
                 context["point_of_contact"] = customer.name
-                context["password"] = base64.b64decode(
-                    customer.password).decode()
-            template = "emails/forgot_password.html"
+                context["password"] = base64.b64decode(customer.password).decode()
+                context["login_url"] = "%s/customer/login" % settings.FRONTEND_URL
+            template_path = "emails/forgot_password.html"
+            txt_path = "emails/email.txt"
             recipient = email_id
             subject = "Your %s account password" % org_name
-            send_email(template, context, recipient, subject, None)
-            result.update({
-                "message": "password retrieved successfully",
-                "status": "success"
-            })
+            template = get_template(template_path)
+            txt = get_template(txt_path)
+            text_content = txt.render(context)
+            html_content = template.render(context)
+            send_emails(subject=subject, from_email="powerbot@roundsqr.net",  recipient_list=[recipient],
+                        text_content=text_content, html_content=html_content)
+            email_save(template_path, context, recipient, subject, result, 1)
+            result.update({"message": "Email sent successfully", "status": "success"})
         except Admin.DoesNotExist:
             result["message"] = "invalid email_id"
         except Customers.DoesNotExist:
             result["message"] = "invalid email_id"
         except KeyError as e:
-            result.update({
-                "message": "API Error",
-                "response": {e.args[0]: "This field is required."}
-            })
+            result.update({"message": "API Error", "response": {e.args[0]: "This field is required."}})
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
         except Exception as e:
             result.update(exception_handler(e))
         print("result", result)
         return response.Response(result)
-
-    def validate_emailid(self, email_id):
-        if not re.match(
-            r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
-            email_id
-        ):
-            raise exceptions.ValidationError({
-                "email": ["Invalid `%s` value." % email_id]
-            })
-        return email_id
 
 
 class ClientSignup(CreateAPIView):
@@ -2013,3 +2185,375 @@ class ChangePassword(views.APIView):
         user.save()
         context['message'] = "Password changed successfully."
         return response.Response(context, status=200)
+
+
+class BotList(views.APIView):
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        context = {}
+        data = []
+        queryset = []
+        user = auth_result["user"]
+        try:
+            cb_config = CustomerBots.objects.filter(customer=user)
+            queryset = cb_config.values('bot_id', 'bot__name')
+        except Exception as e:
+            print(e)
+        for obj in queryset:
+            data.append({"id": obj['bot_id'], "name": obj['bot__name']})
+        context['data'] = data
+        return response.Response(context, status=200)
+
+
+class APIConfiguration(views.APIView):
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        queryset = BotConfiguration.objects.all()
+        serializer = ClientQuestionSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        que = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            conf = BotConfiguration.objects.create(
+                question_id=que['question_id'], question=que['question'],
+                answer_type=que['answer_type'], suggested_answers=que['suggested_answers'], api_name=que['api_name'],
+                suggested_jump=que['suggested_jump'], fields=que['fields'], number_of_params=que['number_of_params'],
+                required=que['required'], related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                is_last_question=que['is_last_question'], error_msg=que['error_msg'], customer_id=que['customer'],
+                bot_id=que['bot'], validation1=que['validation1'], validation2=que['validation2'],
+                validation_type=que['validation_type'])
+            context['message'] = "Configuration created successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+    def put(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(
+                auth_result,
+            )
+        que = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            conf = BotConfiguration.objects.get(id=que['id'])
+            conf.question = que['question'] if 'question' in que else conf.question
+            conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
+            conf.suggested_answers = que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+            conf.suggested_jump = que['suggested_jump'] if 'suggested_jump' in que else conf.suggested_jump
+            conf.fields = que['fields'] if 'fields' in que else conf.fields
+            conf.api_name = que['api_name'] if 'api_name' in que else conf.api_name
+            conf.number_of_params = que['number_of_params'] if 'number_of_params' in que else conf.number_of_params
+            conf.required = que['required'] if 'required' in que else conf.required
+            conf.related = que['related'] if 'related' in que else conf.related
+            conf.is_lead_gen_question = que['is_lead_gen_question'] if 'is_lead_gen_question' in que else conf.is_lead_gen_question
+            conf.is_last_question = que['is_last_question'] if 'is_last_question' in que else conf.is_last_question
+            conf.validation1 = que['validation1'] if 'validation1' in que else conf.validation1
+            conf.validation2 = que['validation2'] if 'validation2' in que else conf.validation2
+            conf.validation_type = que['validation_type'] if 'validation_type' in que else conf.validation_type
+            conf.error_msg = que['error_msg'] if 'error_msg' in que else conf.error_msg
+            conf.save()
+            context['message'] = "Configuration updated successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+
+class APIBulkQuestion(views.APIView):
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        # cust_id = auth_result["user"].id
+        # cb_list = list(CustomerBots.objects.all().filter(customer_id=cust_id).values_list('id', flat=True))
+        queryset = BulkQuestion.objects.all()  # .filter(mapping_id_id__in=cb_list)
+        mapping_id = self.request.query_params.get('mapping_id')
+        if mapping_id:
+            queryset = queryset.filter(mapping_id=mapping_id)
+        serializer = BulkQuestionSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        data = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            ques = data.get('questions', [])
+            mapping_id = data.get('mapping_id')
+            res = BulkQuestion.objects.create(mapping_id_id=mapping_id)
+            cust = res.mapping_id.customer
+            bot = res.mapping_id.bot
+            for que in ques:
+                conf = BotConfiguration.objects.create(
+                    question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
+                    suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                    api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
+                    related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                    is_last_question=que['is_last_question'], customer=cust, bot=bot)
+                res.questions.add(conf)
+                res.save()
+                context['message'] = "Questions uploaded successfully"
+                status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+    def put(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        data = self.request.data
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            obj_id = data.get('id')
+            ques = data.get('questions', [])
+            res = BulkQuestion.objects.get(id=obj_id)
+            cust = res.mapping_id.customer
+            bot = res.mapping_id.bot
+            for que in ques:
+                try:
+                    conf = BotConfiguration.objects.get(id=que['id'])
+                    conf.question = que['question'] if 'question' in que else conf.question
+                    conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
+                    conf.suggested_answers = que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+                    conf.suggested_jump = que['suggested_jump'] if 'suggested_jump' in que else conf.suggested_jump
+                    conf.fields = que['fields'] if 'fields' in que else conf.fields
+                    conf.api_name = que['api_name'] if 'api_name' in que else conf.api_name
+                    conf.number_of_params = que['number_of_params'] if 'number_of_params' in que else conf.number_of_params
+                    conf.required = que['required'] if 'required' in que else conf.required
+                    conf.related = que['related'] if 'related' in que else conf.related
+                    conf.is_lead_gen_question = que['is_lead_gen_question'] if 'is_lead_gen_question' in que else conf.is_lead_gen_question
+                    conf.is_last_question = que['is_last_question'] if 'is_last_question' in que else conf.is_last_question
+                    conf.validation1 = que['validation1'] if 'validation1' in que else conf.validation1
+                    conf.validation2 = que['validation2'] if 'validation2' in que else conf.validation2
+                    conf.validation_type = que['validation_type'] if 'validation_type' in que else conf.validation_type
+                    conf.error_msg = que['error_msg'] if 'error_msg' in que else conf.error_msg
+                    conf.customer = cust
+                    conf.bot = bot
+                    conf.save()
+                except Exception as e:
+                    print(e)
+                    conf = BotConfiguration.objects.create(
+                        question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
+                        suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                        api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
+                        related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
+                        is_last_question=que['is_last_question'], customer=cust, bot=bot)
+                    res.questions.add(conf)
+                    res.save()
+                context['message'] = "Questions updated successfully"
+                status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+
+class APICustomerBots(views.APIView):
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        queryset = CustomerBots.objects.all()
+        serializer = CustomerBotRetrieveSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        user_id = auth_result["user"].id
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            data = self.request.data
+            bot = Bots.objects.get(id=data['bot'])
+            cust = Customers.objects.get(id=data['customer'])
+            bot_id_text = "%s%s" % (str(bot.name), str(bot.id).zfill(4))
+            cust_id_text = "%s_%s" % (str(cust.org_name), str(bot_id_text))
+            res = CustomerBots.objects.create(
+                created_by_id=user_id, updated_by_id=user_id, bot_type=data['bot_type'], source_url=data['source_url'],
+                customer_id_text=cust_id_text, bot_id_text=bot_id_text, customer=cust, bot=bot)
+            res.header_colour = data['header_colour'] if 'header_colour' in data else "#000000"
+            res.body_colour = data['body_colour'] if 'body_colour' in data else "#FFFFFF"
+            res.font_type = data['font_type'] if 'font_type' in data else "Arial, Helvitica"
+            res.bot_logo = data['bot_logo'] if 'bot_logo' in data else "static/images/default/bot_logo.png"
+            res.chat_logo = data['chat_logo'] if 'chat_logo' in data else "static/images/default/chat.png"
+            res.user_logo = data['user_logo'] if 'user_logo' in data else "static/images/default/user_logo.jpg"
+            res.bot_bubble_colour = data['bot_bubble_colour'] if 'bot_bubble_colour' in data else "#C0C0C0"
+            res.user_bubble_colour = data['user_bubble_colour'] if 'user_bubble_colour' in data else "#606060"
+            res.chat_bot_font_colour = data['chat_bot_font_colour'] if 'chat_bot_font_colour' in data else "#000000"
+            res.chat_user_font_colour=data['chat_user_font_colour'] if 'chat_user_font_colour' in data else "#FFFFFF"
+            res.save()
+            context['message'] = "Configuration added successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            if 'UNIQUE constraint' in str(e.args):
+                raise exceptions.ValidationError({"message": ["Customer with the bot already have a configuration."]})
+            else:
+                context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+    def put(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(self.request)
+        if "error" in auth_result:
+            return response.Response(auth_result,)
+        context = {"message": "Something went wrong"}
+        status = 400
+        try:
+            data = self.request.data
+            res = CustomerBots.objects.get(id=data['id'])
+            res.header_colour = data['header_colour'] if 'header_colour' in data else res.header_colour
+            res.body_colour = data['body_colour'] if 'body_colour' in data else res.body_colour
+            res.font_type = data['font_type'] if 'font_type' in data else res.font_type
+            res.bot_logo = data['bot_logo'] if 'bot_logo' in data else res.bot_logo
+            res.chat_logo = data['chat_logo'] if 'chat_logo' in data else res.chat_logo
+            res.user_logo = data['user_logo'] if 'user_logo' in data else res.user_logo
+            res.bot_bubble_colour = data['bot_bubble_colour'] if 'bot_bubble_colour' in data else res.bot_bubble_colour
+            res.user_bubble_colour = data['user_bubble_colour'] if 'user_bubble_colour' in data else res.user_bubble_colour
+            res.chat_bot_font_colour = data['chat_bot_font_colour'] if 'chat_bot_font_colour' in data else res.chat_bot_font_colour
+            res.chat_user_font_colour = data['chat_user_font_colour'] if 'chat_user_font_colour' in data else res.chat_user_font_colour
+            res.save()
+            context['message'] = "Configuration updated successfully"
+            status = 200
+        except Exception as e:
+            print(e)
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
+
+class Reports(views.APIView):
+
+    def get(self, request):
+        token_auth = TokenAuthentication()
+        auth_result = token_auth.authenticate(request)
+        # if "error" in auth_result:
+        #     return response.Response(
+        #         auth_result,
+        #     )
+        result = {
+            "message": "Something went wrong.",
+            "status": "failed"
+        }
+        try:
+            cust_id = auth_result["user"].id
+            customer = Customers.objects.get(id=cust_id)
+        except:
+            cust_id = request.query_params.get("customer_id", "")
+            if not cust_id:
+                return response.Response(result)
+            customer = Customers.objects.get(id=cust_id)
+
+        today = datetime.now()
+        try:
+            bot_id = request.query_params.get("bot_id", "")
+            download = request.query_params.get("download", "false")
+            s_id = request.query_params.get("session_id", "")
+            begin_day = Customers.objects.all().order_by('date_joined')[0].date_joined
+            days_count = int(request.query_params.get("days_count", 30))
+            all_records = request.query_params.get("all", "false")
+            st_dt = request.query_params.get("start_date", "")
+            nd_dt = request.query_params.get("end_date", "")
+            if all_records == 'true':
+                days_count = (today.date() - begin_day.date()).days
+            end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt and all_records != 'true' else today.date()
+            start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt and all_records != 'true' else \
+                end_date - timedelta(days=days_count)
+            bot_query = Q(customer=customer, bot_id=bot_id) if bot_id.isdigit() else Q(customer=customer)
+            range_query = Q(time_stamp__date__range=[start_date, end_date]) if start_date else Q(
+                time_stamp__date__lte=end_date)
+            data = []
+            questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
+            if s_id:
+                conv = list(Conversation.objects.all().filter(session_id=s_id).distinct('session_id').values_list(
+                    'session_id', flat=True))
+            else:
+                conv = list(Conversation.objects.all().filter(bot_query).filter(range_query).filter(
+                    text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+            conv = list(dict.fromkeys(conv))
+            for session_id in conv:
+                queryset = Conversation.objects.all().filter(session_id=session_id).order_by('id')
+                cb_relation = CustomerBots.objects.all().filter(customer=queryset[0].customer, bot=queryset[0].bot)
+                raw_dict = dict(
+                    session_id=session_id, bot_name=cb_relation[0].bot.name, source_url=cb_relation[0].source_url,
+                    download_csv=settings.BACKEND_URL + "/reports_download/?download=csv&session_id=" + session_id +
+                    "&customer_id=" + str(cust_id), download_excel=settings.BACKEND_URL +
+                    "/reports_download/?download=excel&session_id=" + session_id + "&customer_id=" + str(cust_id))
+                if download in ['csv', 'excel']:
+                    for obj in queryset:
+                        query_dict = dict(
+                            session_id=session_id, bot_name=cb_relation[0].bot.name, sender=obj.sender, message=obj.text,
+                            source_url=cb_relation[0].source_url, time_stamp=obj.time_stamp.strftime("%Y-%m-%d %H:%M"))
+                        data.append(query_dict)
+                else:
+                    data.append(raw_dict)
+            headers = ["session_id", "bot_name", "source_url", "sender", "message", "time_stamp"]
+            if download == 'csv':
+                resp = HttpResponse(content_type='text/csv')
+                resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
+                    "%Y-%m-%dT%H.%M.%S") + '.csv"'
+                writer = csv.writer(resp)
+                writer.writerow(["ChatBot Conversations Data"])
+                writer.writerow(headers)
+                for ele in data:
+                    writer.writerow([str(ele[header]) for header in headers])
+                return resp
+            elif download == 'excel':
+                resp = HttpResponse(content_type='application/ms-excel')
+                resp['Content-Disposition'] = 'attachment; filename="chat_bot_conversations_' + today.strftime(
+                    "%Y-%m-%dT%H.%M.%S") + '.xlsx"'
+                wb = openpyxl.Workbook(write_only=True)
+                ws = wb.create_sheet("ChatBot Conversations Data")
+                ws.append(["ChatBot Conversations Data"])
+                ws.append(headers)
+                for my_row in data:
+                    ws.append([str(my_row[header]) for header in headers])
+                wb.save(resp)
+                return resp
+            result.update({"message": "Conversation data fetching success.", "status": "success", "response": {
+                "data": data, "download_all_csv": settings.BACKEND_URL + "/reports_download/?download=csv&customer_id="
+                + str(cust_id) + "&bot_id=" + bot_id + "&start_date=" + start_date.strftime("%Y-%m-%d") +
+                "&end_date=" + end_date.strftime("%Y-%m-%d"),  "download_all_excel": settings.BACKEND_URL
+                + "/reports_download/?download=excel&customer_id=" + str(cust_id) + "&bot_id=" + bot_id +
+                "&start_date=" + start_date.strftime("%Y-%m-%d") + "&end_date=" + end_date.strftime("%Y-%m-%d")}})
+        except Exception as e:
+            result.update({"message": "error", "response": str(e)})
+        # print("result", result)
+        return response.Response(result)

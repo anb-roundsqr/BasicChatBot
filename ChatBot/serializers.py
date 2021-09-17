@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ChatBot.models import BotConfiguration, Customers, Bots, CustomerBots
+from ChatBot.models import BotConfiguration, Customers, Bots, CustomerBots, BulkQuestion
 
 
 class ClientQuestionSerializer(serializers.ModelSerializer):
@@ -171,3 +171,20 @@ class CustomerBotUpdateSerializer(serializers.ModelSerializer):
             'chat_user_font_colour', 'date_modified',
             'updated_by_id',
         ]
+
+
+class QuestionListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = BotConfiguration
+        exclude = ['description']
+        order_by = ['-id']
+
+
+class BulkQuestionSerializer(serializers.ModelSerializer):
+    questions = QuestionListSerializer(many=True, required=False, read_only=True)
+
+    class Meta:
+        model = BulkQuestion
+        fields = ('id', 'mapping_id', 'questions')

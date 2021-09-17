@@ -1,6 +1,7 @@
 from django.db import models
 from model_utils import Choices
 from django.utils.translation import ugettext_lazy as _
+from .constants import get_a_uuid
 
 
 class Admin(models.Model):
@@ -39,8 +40,8 @@ class Customers(models.Model):
         max_length=200, null=False, blank=False, unique=True)
     mobile = models.BigIntegerField(null=False, blank=False, unique=True)
     password = models.TextField(null=False)
-    date_joined = models.DateTimeField(null=False, blank=False)
-    date_modified = models.DateTimeField(null=True, blank=True)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     created_by_id = models.IntegerField(null=True)
     updated_by_id = models.IntegerField(null=True)
     is_active = models.BooleanField(default=False)
@@ -63,8 +64,8 @@ class Bots(models.Model):
     name = models.CharField(max_length=200, unique=True)
     description = models.TextField(null=True)
     model_name = models.CharField(max_length=125, null=True)
-    date_created = models.DateTimeField(null=False, blank=False)
-    date_modified = models.DateTimeField(null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     created_by_id = models.IntegerField(null=True)
     updated_by_id = models.IntegerField(null=True)
 
@@ -85,8 +86,8 @@ class CustomerBots(models.Model):
     """
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
-    customer_id_text = models.TextField(max_length=100, null=False, unique=True)
-    bot_id_text = models.TextField(max_length=150, null=False)
+    customer_id_text = models.TextField(max_length=100, unique=True, default=get_a_uuid)
+    bot_id_text = models.TextField(max_length=150, null=True, blank=True)
     source_url = models.TextField(unique=True)
     BOT_TYPE = Choices(
         ('BASIC', 'basic', _('BASIC')),
@@ -106,8 +107,8 @@ class CustomerBots(models.Model):
     user_bubble_colour = models.CharField(max_length=25, default='#606060')
     chat_bot_font_colour = models.CharField(max_length=25, default='#000000')
     chat_user_font_colour = models.CharField(max_length=25, default='#FFFFFF')
-    date_created = models.DateTimeField(null=False, blank=False)
-    date_modified = models.DateTimeField(null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     created_by_id = models.IntegerField(null=True)
     updated_by_id = models.IntegerField(null=True)
     '''
@@ -130,6 +131,7 @@ class Conversation(models.Model):
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot_origin_url = models.TextField()
     ip_address = models.TextField(null=True)
+    country = models.CharField(max_length=4, default='IN')
     session_id = models.TextField()
     event_name = models.TextField()  # bot or user response
     time_stamp = models.DateTimeField(auto_now_add=True)
@@ -152,7 +154,7 @@ class BotConfiguration(models.Model):
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     bot = models.ForeignKey(Bots, on_delete=models.CASCADE)
     question = models.TextField(max_length=250)
-    description = models.TextField(max_length=500, null=True)
+    description = models.TextField(max_length=500, null=True, blank=True)
     question_id = models.IntegerField()  # UI Purpose
     ANSWER_TYPE = Choices(
         ('TEXT', 'text', _('TEXT')),
@@ -162,27 +164,35 @@ class BotConfiguration(models.Model):
         ('CHECKBOX', 'checkbox', _('CHECKBOX')),
         ('FILE', 'file', _('FILE')),
         ('DATE', 'date', _('DATE')),
+        ('ACTION', 'action', _('ACTION')),
     )
     answer_type = models.CharField(max_length=10, choices=ANSWER_TYPE)
     suggested_answers = models.TextField(default=[])
     suggested_jump = models.TextField(default=[])
-    validation1 = models.TextField(default="")
-    validation2 = models.TextField(default="")
-    error_msg = models.TextField(default="")
-    # created_by_id = models.IntegerField()
-    # updated_by_id = models.IntegerField()
-    date_created = models.DateTimeField(null=False, blank=False)
-    date_modified = models.DateTimeField(null=True, blank=True)
+    validation1 = models.TextField(null=True, blank=True)
+    validation2 = models.TextField(null=True, blank=True)
+    error_msg = models.TextField(null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
     required = models.CharField(max_length=4, default="no")
     related = models.BooleanField(default=False)
     is_first_question = models.BooleanField(default=False)
     is_last_question = models.BooleanField(default=False)
     is_lead_gen_question = models.BooleanField(default=False)
+    validation_type = models.TextField(default='[]')
+    number_of_params = models.IntegerField(default=0)
+    fields = models.TextField(default='[]')
+    api_name = models.CharField(max_length=200, null=True, blank=True)
 
     class Meta:
         app_label = 'ChatBot'
         db_table = '%s_client_questions' % app_label
+
+
+class BulkQuestion(models.Model):
+    mapping_id = models.ForeignKey(CustomerBots, on_delete=models.CASCADE, related_name='bulk_questions')
+    questions = models.ManyToManyField(BotConfiguration)
 
 
 class EmailStatus(models.Model):
