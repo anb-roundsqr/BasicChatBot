@@ -1655,7 +1655,7 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
-            cust_query = Q(cust_id=cust_id) if cust_id.isdigit() else Q()
+            cust_query = Q(customer_id=cust_id) if cust_id.isdigit() else Q()
             questions = list(BotConfiguration.objects.all().filter(cust_query, bot_query).filter(
                 is_last_question=True).values_list('question', flat=True))
             conv = list(Conversation.objects.all().filter(cust_query, bot_query).filter(
@@ -1730,7 +1730,7 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
-            cust_query = Q(cust_id=cust_id) if cust_id.isdigit() else Q()
+            cust_query = Q(customer_id=cust_id) if cust_id.isdigit() else Q()
             questions = list(BotConfiguration.objects.all().filter(cust_query, bot_query).values_list('question', flat=True))
             conv = list(Conversation.objects.all().filter(cust_query, bot_query, query).filter(text__in=questions).distinct(
                 'session_id').values_list('id', flat=True))
@@ -1814,7 +1814,7 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
-            cust_query = Q(cust_id=cust_id) if cust_id.isdigit() else Q()
+            cust_query = Q(customer_id=cust_id) if cust_id.isdigit() else Q()
             chats = Conversation.objects.all().filter(cust_query, bot_query, query).values('time_stamp')
             chats = json.loads(dumps(chats))
             result["message"] = "no graph data"
