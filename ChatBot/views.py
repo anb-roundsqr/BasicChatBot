@@ -1602,9 +1602,11 @@ class Analytics(views.APIView):
             "message": "Value required for 'days_count' field.",
             "status": "failed"
         }
+        cust_id = request.query_params.get('customer_id', auth_result["user"].id)
         try:
             today = datetime.now()
-            begin_day = Customers.objects.all().order_by('date_joined')[0].date_joined
+            customer = Customers.objects.get(id=cust_id) if cust_id else Customers.objects.all().order_by('date_joined')[0]
+            begin_day = customer.date_joined
             days_count = int(request.query_params.get("days_count", 30))
             all_records = request.query_params.get("all", "false")
             st_dt = request.query_params.get("start_date", "")
@@ -1619,11 +1621,11 @@ class Analytics(views.APIView):
             bot_id = request.query_params.get("bot_id", "")
             slug = kwargs["slug"]
             if slug == "session":
-                result.update(self.session_metrics(start_date, end_date, sender, bot_id))
+                result.update(self.session_metrics(start_date, end_date, sender, bot_id, cust_id))
             elif slug == "leads":
-                result.update(self.leads_metrics(start_date, end_date, sender, bot_id))
+                result.update(self.leads_metrics(start_date, end_date, sender, bot_id, cust_id))
             else:
-                result.update(self.chat_metrics(start_date, end_date, sender, bot_id))
+                result.update(self.chat_metrics(start_date, end_date, sender, bot_id, cust_id))
         except KeyError as e:
             result.update({
                 "message": "API Error",
@@ -1634,16 +1636,12 @@ class Analytics(views.APIView):
         print("result", result)
         return response.Response(result)
 
-    def session_metrics(self, start_date, end_date, sender, bot_id):
+    def session_metrics(self, start_date, end_date, sender, bot_id, cust_id):
         result = {
             "message": "",
             "status": "failed"
         }
         try:
-            # end_date = datetime.now(tz=timezone.utc)
-            # start_date = end_date - timedelta(days=days_count)
-            # print('current_date', end_date.date())
-            # print('start_date', start_date.date())
             actual_dates = []
             for i in range((start_date - end_date).days):
                 actual_dates.append(
@@ -1657,8 +1655,11 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
-            questions = list(BotConfiguration.objects.all().filter(bot_query).filter(is_last_question=True).values_list('question', flat=True))
-            conv = list(Conversation.objects.all().filter(bot_query).filter(text__in=questions).distinct('session_id').values_list('session_id', flat=True))
+            cust_query = Q(cust_id=cust_id) if cust_id.isdigit() else Q()
+            questions = list(BotConfiguration.objects.all().filter(cust_query, bot_query).filter(
+                is_last_question=True).values_list('question', flat=True))
+            conv = list(Conversation.objects.all().filter(cust_query, bot_query).filter(
+                text__in=questions).distinct('session_id').values_list('session_id', flat=True))
             complt = Q(session_id__in=conv)
             ncomp = ~Q(session_id__in=conv)
             qs1id = list(Conversation.objects.filter(query, complt).distinct('session_id').values_list('id', flat=True))
@@ -1710,14 +1711,12 @@ class Analytics(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def leads_metrics(self, start_date, end_date, sender, bot_id):
+    def leads_metrics(self, start_date, end_date, sender, bot_id, cust_id):
         result = {
             "message": "",
             "status": "failed"
         }
         try:
-            # end_date = datetime.now(tz=timezone.utc)
-            # start_date = current_date - timedelta(days=days_count)
             actual_dates = []
             for i in range((start_date - end_date).days):
                 actual_dates.append(
@@ -1731,8 +1730,9 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
-            questions = list(BotConfiguration.objects.all().filter(bot_query).values_list('question', flat=True))
-            conv = list(Conversation.objects.all().filter(bot_query).filter(query).filter(text__in=questions).distinct(
+            cust_query = Q(cust_id=cust_id) if cust_id.isdigit() else Q()
+            questions = list(BotConfiguration.objects.all().filter(cust_query, bot_query).values_list('question', flat=True))
+            conv = list(Conversation.objects.all().filter(cust_query, bot_query, query).filter(text__in=questions).distinct(
                 'session_id').values_list('id', flat=True))
             qs = Conversation.objects.filter(id__in=conv)
             qsl = []
@@ -1777,34 +1777,30 @@ class Analytics(views.APIView):
             result.update(exception_handler(e))
         return result
 
-    def leads_metrics_old(self):
-        result = {
-            "message": "graph data",
-            "status": "success",
-            "leads": 800,
-            "companies": {
-                "worldwide": 500,
-                "Asia": 130,
-                "Africa": 90,
-                "North America": 80,
-                "South America": 40,
-                "Australia": 70,
-                "Europe": 90,
-            },
-        }
-        return result
+    # def leads_metrics_old(self):
+    #     result = {
+    #         "message": "graph data",
+    #         "status": "success",
+    #         "leads": 800,
+    #         "companies": {
+    #             "worldwide": 500,
+    #             "Asia": 130,
+    #             "Africa": 90,
+    #             "North America": 80,
+    #             "South America": 40,
+    #             "Australia": 70,
+    #             "Europe": 90,
+    #         },
+    #     }
+    #     return result
 
-    def chat_metrics(self, start_date, end_date, sender, bot_id):
+    def chat_metrics(self, start_date, end_date, sender, bot_id, cust_id):
 
         result = {
             "message": "",
             "status": "failed"
         }
         try:
-            # end_date = datetime.now(tz=timezone.utc)
-            # start_date = end_date - timedelta(days=days_count)
-            # print('current_date', end_date.date())
-            # print('start_date', start_date.date())
             actual_dates = []
             for i in range((start_date - end_date).days):
                 actual_dates.append(
@@ -1818,7 +1814,8 @@ class Analytics(views.APIView):
             if sender:
                 query &= Q(sender=sender)
             bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
-            chats = Conversation.objects.all().filter(bot_query).filter(query).values('time_stamp')
+            cust_query = Q(cust_id=cust_id) if cust_id.isdigit() else Q()
+            chats = Conversation.objects.all().filter(cust_query, bot_query, query).values('time_stamp')
             chats = json.loads(dumps(chats))
             result["message"] = "no graph data"
             if chats:
@@ -2200,11 +2197,14 @@ class BotList(views.APIView):
         data = []
         queryset = []
         user = auth_result["user"]
+        cust_id = request.query_params.get('customer_id', None)
         try:
+            user = Customers.objects.get(id=cust_id) if cust_id else user
             cb_config = CustomerBots.objects.filter(customer=user)
             queryset = cb_config.values('bot_id', 'bot__name')
         except Exception as e:
             print(e)
+            context['message'] = str(e)
         for obj in queryset:
             data.append({"id": obj['bot_id'], "name": obj['bot__name']})
         context['data'] = data

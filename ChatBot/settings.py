@@ -1,6 +1,6 @@
 from .settings_base import *
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 FRONTEND_URL = "https://app.chatbotdev.roundsqr.net"
 BACKEND_URL = "https://api.chatbotdev.roundsqr.net"
