@@ -1602,7 +1602,7 @@ class Analytics(views.APIView):
             "message": "Value required for 'days_count' field.",
             "status": "failed"
         }
-        cust_id = request.query_params.get('customer_id', auth_result["user"].id)
+        cust_id = request.query_params.get('customer_id', str(auth_result["user"].id))
         try:
             today = datetime.now()
             customer = Customers.objects.get(id=cust_id) if cust_id else Customers.objects.all().order_by('date_joined')[0]
