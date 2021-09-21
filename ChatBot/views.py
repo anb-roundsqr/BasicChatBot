@@ -5,7 +5,7 @@ from ChatBot.functions import (
     process_api_exception,
     exception_handler,
     time_stamp_to_date_format,
-    send_emails, email_save
+    send_emails, email_save, get_user_role
 )
 from ChatBot.models import (
     BotConfiguration,
@@ -2197,16 +2197,18 @@ class BotList(views.APIView):
         data = []
         queryset = []
         user = auth_result["user"]
-        cust_id = request.query_params.get('customer_id', None)
+        role = get_user_role(user.id)
+        cust_id = request.query_params.get('customer_id', None) if role == 'admin' else None
         try:
-            user = Customers.objects.get(id=cust_id) if cust_id else user
-            cb_config = CustomerBots.objects.filter(customer=user)
-            queryset = cb_config.values('bot_id', 'bot__name')
+            user = Customers.objects.get(id=cust_id) if role == 'admin' and cust_id else user
+            cb_config = CustomerBots.objects.filter(customer=user) if role == 'customer' or cust_id else CustomerBots.objects.all()
+            queryset = cb_config.values('bot_id', 'bot__name', 'customer_id', 'customer__name')
         except Exception as e:
             print(e)
             context['message'] = str(e)
         for obj in queryset:
-            data.append({"id": obj['bot_id'], "name": obj['bot__name']})
+            data.append({"id": obj['bot_id'], "name": obj['bot__name'], "customer_id": obj['customer_id'],
+                         "customer_name": obj['customer__name']})
         context['data'] = data
         return response.Response(context, status=200)
 

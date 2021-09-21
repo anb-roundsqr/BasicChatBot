@@ -6,6 +6,7 @@ from django.utils import timezone
 from bson.objectid import ObjectId
 from .models import EmailStatus
 from django.core.mail import send_mail
+from .models import Admin, Customers
 
 
 def time_stamp_to_date_format(date_from_db):
@@ -193,3 +194,14 @@ def send_emails(subject, from_email, recipient_list, text_content, html_content=
     except Exception as e:
         result.update(exception_handler(e))
     return result
+
+
+def get_user_role(user_id):
+    role = 'anonymous'
+    try:
+        user = Admin.objects.get(id=user_id)
+        role = 'admin'
+    except:
+        user = Customers.objects.filter(id=user_id)
+        role = 'customer'
+    return role
