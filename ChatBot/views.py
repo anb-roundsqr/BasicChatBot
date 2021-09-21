@@ -2200,8 +2200,8 @@ class BotList(views.APIView):
         role = get_user_role(user.id)
         cust_id = request.query_params.get('customer_id', None) if role == 'admin' else None
         try:
-            user = Customers.objects.get(id=cust_id) if role == 'admin' and cust_id else user
-            cb_config = CustomerBots.objects.filter(customer=user) if role == 'customer' or cust_id else CustomerBots.objects.all()
+            user = Customers.objects.get(id=cust_id) if cust_id else user
+            cb_config = CustomerBots.objects.filter(customer=user) if cust_id or role == 'customer' else CustomerBots.objects.all()
             queryset = cb_config.values('bot_id', 'bot__name', 'customer_id', 'customer__name')
         except Exception as e:
             print(e)
