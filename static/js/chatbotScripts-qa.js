@@ -87,10 +87,28 @@ function funChatbox(text_msgs, ques_msg, response, sessionId) {
     }
 }
 
+async function submitChatForm() {
+    var form = $('#chatForm')[0];
+    let formData = new FormData(form);
+    let resp;
+    try {
+        let r = await fetch($('#chatForm').attr('action'), { method: "POST", body: formData })
+            .then(response => response.text())
+            .then(data => {
+                console.log(data);
+                resp = JSON.parse(data)});
+        if (response.status == 'success') {
+            document.getElementById('ans').click();
+        }
+    } catch (e) {
+        console.log('something went wrong: ', e);
+    }
+};
+
 function showResponse(ajaxResponse, response) {
     console.log(response);
     var seconds = new Date().getTime() / 1000;
-    console.log(seconds) 
+    console.log(seconds)
     var css = response.response;
     console.log(css.header_colour)
     var headerBlock = document.getElementById('rsq_mydiv');
@@ -183,13 +201,14 @@ function showResponse(ajaxResponse, response) {
     newItem21.style.color = css.chat_bot_font_colour;
     //bot chat bubble backgroundcolor
     newItem21.style.backgroundColor = css.bot_bubble_colour;
-
+    newItem21.style.overflow = 'auto';
     var para = document.createElement('p');
 
 
     var span = document.createElement('span');
     span.innerHTML = ajaxResponse[0].question;
     span.appendChild(linebreak);
+
 
     var sug_answers = ajaxResponse[0].suggested_answers;
 
@@ -268,57 +287,79 @@ function showResponse(ajaxResponse, response) {
         }, 500);;
 
     } else {
-
+        if(ajaxResponse[0].answer_type == 'ACTION') {
+            var form_div = document.createElement('div');
+            var form_fields = ajaxResponse[0].fields;
+            var input_field = '';
+            for (var u = 0; u < form_fields.length; u++) {
+                if(!form_fields[u].name) continue;
+                var name = form_fields[u].name.split('_').join(' ');
+                input_field += '<div class="col-md-12"><input type="'+ form_fields[u].type + '" name="' +
+                form_fields[u].name +'" placeholder="'+ name +'" class="form-control form-input" style="padding: 0;" required></div>';
+            }
+            var fieldHTML = '<form id="chatForm" action="'+ ajaxResponse[0].api_name +'" method="POST">'+
+            '<div class="form-group">'+ input_field +'</div><div class="col-md-12" style="text-align: center;">'+
+            '<input class="btn chat-form" type="button" onclick="validateChatForm();" value="Save"></div></form>';
+            form_div.innerHTML = fieldHTML;
+        }
         for (var x = 0; x < sug_answers.length; x++) {
             var newbtn = document.createElement('input');
+            newbtn.id = 'ans';
             newbtn.type = 'button';
             newbtn.value = sug_answers[x].title;
             newbtn.innerHTML = sug_answers[x].title;
+            if(!sug_answers[x].title) {
+                newbtn.style = 'background: transparent; border: none !important;';
+            }
             newbtn.addEventListener("click", function (event) {
-                var btnValue = event.target.value;
+                if(ajaxResponse[0].answer_type == 'ACTION') var btnValue = "form submitted"; else btnValue = event.target.value;
 
-            var newItem_oc = document.createElement('div');
-            newItem_oc.className = ('outgoing-chats');
-            //user chat container background color
-            // newItem_oc.style.backgroundColor = '#ccffff';
-
-
-            var newItem_oc1 = document.createElement('div');
-            newItem_oc1.className = ('outgoing-chats-msg');
-            var para_oc = document.createElement('p');
-            //user chat bubble backgroundcolor
-            para_oc.style.backgroundColor = css.user_bubble_colour;
-            //user chat text color
-            para_oc.style.color = css.chat_user_font_colour;
+                var newItem_oc = document.createElement('div');
+                newItem_oc.className = ('outgoing-chats');
+                //user chat container background color
+                // newItem_oc.style.backgroundColor = '#ccffff';
 
 
+                var newItem_oc1 = document.createElement('div');
+                newItem_oc1.className = ('outgoing-chats-msg');
+                var para_oc = document.createElement('p');
+                //user chat bubble backgroundcolor
+                para_oc.style.backgroundColor = css.user_bubble_colour;
+                //user chat text color
+                para_oc.style.color = css.chat_user_font_colour;
 
-            var span_oc = document.createElement('span');
-            span_oc.innerHTML = btnValue;
-            para_oc.appendChild(span_oc);
-            newItem_oc1.appendChild(para_oc);
-            newItem_oc.appendChild(newItem_oc1);
 
-            var newItem_oc2 = document.createElement('div');
-            newItem_oc2.className = ('outgoing-chats-img');
-            var userImg = "https://api.chatbotqa.roundsqr.net/" + css.user_logo;
-            newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
-            newItem_oc.appendChild(newItem_oc2);
 
-            newItem_oc.scrollTop = newItem_oc.scrollHeight;
+                var span_oc = document.createElement('span');
+                span_oc.innerHTML = btnValue;
+                para_oc.appendChild(span_oc);
+                newItem_oc1.appendChild(para_oc);
+                newItem_oc.appendChild(newItem_oc1);
 
-            responseContainer.appendChild(newItem_oc);
-            responseContainer.scrollTop = responseContainer.scrollHeight;
+                var newItem_oc2 = document.createElement('div');
+                newItem_oc2.className = ('outgoing-chats-img');
+                var userImg = "https://api.chatbotqa.roundsqr.net/" + css.user_logo;
+                newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
+                newItem_oc.appendChild(newItem_oc2);
 
-            funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+                newItem_oc.scrollTop = newItem_oc.scrollHeight;
 
-        });
-        span.appendChild(newbtn);
+                responseContainer.appendChild(newItem_oc);
+                responseContainer.scrollTop = responseContainer.scrollHeight;
+
+                if(ajaxResponse[0].answer_type == 'ACTION')
+                    funChatbox("", ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+                else funChatbox(btnValue, ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+
+            });
+            span.appendChild(newbtn);
+
         }
     }
 
-    para.appendChild(span);
 
+    para.appendChild(span);
+    if(ajaxResponse[0].answer_type == 'ACTION') para.appendChild(form_div);
     newItem21.appendChild(para);
     newItem2.appendChild(newItem21);
     newItem.appendChild(newItem2);
@@ -348,6 +389,13 @@ function showResponse(ajaxResponse, response) {
     console.log(finalSeconds - seconds)
 }
 
+async function validateChatForm() {
+    forms = document.getElementById('chatForm');
+    var proceed = true;
+    for (let x of forms) {if(!x.value) {proceed = false; break;} else console.log(x.value);}
+    setTimeout(function() {if (proceed) submitChatForm();}, 500);
+    return proceed;
+}
 
 async function SaveFile(res) {
     let formData = new FormData();

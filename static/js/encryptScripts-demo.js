@@ -1,27 +1,30 @@
 
-
-
-
-// Anonymous "self-invoking" function
 (function() {
     var startingTime = new Date().getTime();
     // Load the script
     var script = document.createElement('script');
-    script.src = 'http://18.221.57.172/static/js/chatbotScripts-demo.js';
+    script.src = 'http://54.68.230.102:8000/static/js/chatbotScripts-demo.js';
     script.type = 'text/javascript';
     document.getElementsByTagName('head')[0].appendChild(script);
 
     var link = document.createElement("LINK");
     link.setAttribute("rel", "stylesheet");
     link.setAttribute("type", "text/css");
-    link.setAttribute("href", "http://18.221.57.172/static/css/style-demo.css");
+    link.setAttribute("href", "http://54.68.230.102:8000/static/css/style.css");
     document.head.appendChild(link);
 
-    var link1 = document.createElement("LINK");
-    link1.setAttribute("rel", "stylesheet");
-    link1.setAttribute("type", "text/css");
-    link1.setAttribute("href", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css");
-    document.head.appendChild(link1);
+    var jScript = document.createElement("script");
+    jScript.setAttribute("rel", "stylesheet");
+    jScript.setAttribute("type", "text/javascript");
+    jScript.setAttribute("href", "https://code.jquery.com/jquery-3.5.1.js");
+    document.head.appendChild(jScript);
+
+
+    // var link1 = document.createElement("LINK");
+    // link1.setAttribute("rel", "stylesheet");
+    // link1.setAttribute("type", "text/css");
+    // link1.setAttribute("href", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css");
+    // document.head.appendChild(link1);
 
     var link2 = document.createElement("LINK");
     link2.setAttribute("rel", "stylesheet");
@@ -42,31 +45,14 @@
     // Start polling...
     checkReady(function($) {
         $(document).ready(function () {
-            $('#box').on('click', function () {
-                $('#chat-box').fadeIn(400);
+            $('#rsq_box').on('click', function () {
+                $('#rsq_chat-box').fadeIn(400);
                 $(this).fadeOut(100);
             });
-            $('#chat-box #minimize').on('click', function () {
-                $('#chat-box').slideUp(600);
-                $('#box').fadeIn(400);
+            $('#rsq_chat-box #rsq_minimize').on('click', function () {
+                $('#rsq_chat-box').slideUp(600);
+                $('#rsq_box').fadeIn(400);
             });
         });
     })
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

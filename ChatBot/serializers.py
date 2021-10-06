@@ -23,7 +23,8 @@ class CustomerListSerializer(serializers.ModelSerializer):
     class Meta:
 
         model = Customers
-        fields = ['url', 'id', 'name', 'org_name', 'logo_path']
+        fields = ['url', 'id', 'name', 'web_url', 'email_id', 'mobile',
+                  'org_name', 'logo_path', 'date_modified', 'updated_by_id']
 
 
 class CustomerRetrieveSerializer(serializers.ModelSerializer):

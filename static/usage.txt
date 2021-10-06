@@ -1,0 +1,23 @@
+To use Chatbot window in client's web applications...
+Follow the steps below:
+
+1. Insert EncryptScript JS file from backend static folder, in HTML head tag as a script.
+i.e. <script src="https://mybackend.com:8080/static/js/encryptScripts-demo.js"></script>
+(make sure that this source URL being served with public access. To test, ping the url in browser and it should load file.)
+
+2. Web application's HTML tag 'body' should make onload function call to 'onLoad()'.
+i.e. <body onload="onLoad()">
+
+3. Insert the following HTML div element inside the body tag -
+
+<div class="container"><div class="row"><div id="rsq_box">
+<img src="https://mybackend.com:8080/static/images/default/chat.png" alt="chat-icon" /></div>
+<div id="rsq_chat-box"><div id="rsq_mydiv"><div id="rsq_icon"></div></div><span id="rsq_minimize"></span>
+<h4 class="rsq_header-text"></h4><p id="rsq_demo"></p><div id="rsq_inputs"><div id="bolChat" class="chats">
+<div id="responseContainer" class="msg-page"><span hidden id="resquestion"></span></div></div></div><div id="bolForm" class="msg-bottom"><div class="input-group">
+<input type="text" name="text_msg" id="txtmsgid" onkeypress="javascript:doit_onkeypress(event);" class="form-control" placeholder="Please enter your text here...." autocomplete="off" />
+<div class="input-group-append"><span id="iconText" class="input-group-text" onclick="funTextMsg()" ><i class="fa fa-paper-plane"></i></span></div></div></div>
+<div id="fileForm" class="file-bottom"><div class="file-group"><input id="image-file" type="file" onchange="SaveFile(this)" />
+</div></div></div></div></div>
+
+4. Now we can certainly use the URL of this webpage, as in 'Source URL' for configuration of the bot questions'.

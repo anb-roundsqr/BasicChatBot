@@ -524,11 +524,12 @@ class CustomerBotViewSet(viewsets.ViewSet):
             })
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
-            if "customer_id_text" in result["response"]:
+            if "customer_id_text" or "source_url" in result["response"]:
                 cb_data = CustomerBots.objects.filter(
                     customer_id=bot_serializer.data['customer'], bot_id=bot_serializer.data['bot'])
-                cb = cb_data[0].id if cb_data else None
-                result["response"] = {"mapping_id": str(cb), "customer_bot": "mapping already existed."}
+                if cb_data:
+                    cb = cb_data[0].id
+                    result["response"] = {"mapping_id": str(cb), "customer_bot": "mapping already existed."}
         except Exception as e:
             result.update(exception_handler(e))
         print("result", result)
@@ -1253,6 +1254,8 @@ class ClientForm(views.APIView):
                     'answer_type': next_question['answer_type'],
                     'type': 'file' if suggested_answers and 'payload' in suggested_answers[0] and 'static/' in suggested_answers[0]['payload'] else 'text',
                     'suggested_answers': suggested_answers,
+                    'api_name': next_question['api_name'],
+                    'fields': json.loads(next_question['fields']) if next_question['fields'] not in ["[]", ""] else [],
                     'is_last_question': next_question["is_last_question"],
                     'sessionId': session_id
                 }
@@ -1633,6 +1636,8 @@ class Analytics(views.APIView):
             })
         except ValueError:
             result["message"] = "'days_count' must be integer."
+        except Exception as e:
+            result["message"] = str(e)
         print("result", result)
         return response.Response(result)
 
@@ -2283,6 +2288,21 @@ class APIConfiguration(views.APIView):
             context['message'] = str(e)
         return HttpResponse(json.dumps(context), status=status, content_type='application/json')
 
+    def delete(self, request):
+        config_id = self.request.GET.get('id', None)
+        context = {"message": "Something went wrong"}
+        status = 400
+        if not config_id:
+            context['message'] = "Please provide configuration Id."
+        try:
+            config = BotConfiguration.objects.get(id=config_id)
+            config.delete()
+            context['message'] = "Question deleted successfully."
+            status = 200
+        except Exception as e:
+            context['message'] = str(e)
+        return HttpResponse(json.dumps(context), status=status, content_type='application/json')
+
 
 class APIBulkQuestion(views.APIView):
 
@@ -2320,7 +2340,8 @@ class APIBulkQuestion(views.APIView):
                     suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
                     api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
                     related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
-                    is_last_question=que['is_last_question'], customer=cust, bot=bot)
+                    is_last_question=que['is_last_question'], validation1=que['validation1'], validation2=que['validation2'],
+                    validation_type=que['validation_type'], error_msg=que['error_msg'], customer=cust, bot=bot)
                 res.questions.add(conf)
                 res.save()
                 context['message'] = "Questions uploaded successfully"
@@ -2372,7 +2393,8 @@ class APIBulkQuestion(views.APIView):
                         suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
                         api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
                         related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
-                        is_last_question=que['is_last_question'], customer=cust, bot=bot)
+                        is_last_question=que['is_last_question'], validation1=que['validation1'], validation2=que['validation2'],
+                        validation_type=que['validation_type'], error_msg=que['error_msg'], customer=cust, bot=bot)
                     res.questions.add(conf)
                     res.save()
                 context['message'] = "Questions updated successfully"
