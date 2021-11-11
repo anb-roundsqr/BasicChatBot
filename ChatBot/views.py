@@ -1118,8 +1118,11 @@ class ClientForm(views.APIView):
                             if len(sug_answers) > 0:
                                 print("current answer", bot_info["text"])
                                 ans_list = [ans['title'] for ans in sug_answers if 'title' in ans]
-                                if bot_info['text'] in ans_list:
-                                    next_index = ans_list.index(bot_info['text'])
+                                if bot_info['text'] in ans_list or "" in ans_list:
+                                    try:
+                                        next_index = ans_list.index(bot_info['text'])
+                                    except:
+                                        next_index = 1
                                     print('next_index', next_index)
                                     if isinstance(sug_jump, list):
                                         if next_index < len(sug_jump):
@@ -1605,7 +1608,9 @@ class Analytics(views.APIView):
             "message": "Value required for 'days_count' field.",
             "status": "failed"
         }
-        cust_id = request.query_params.get('customer_id', str(auth_result["user"].id))
+        user = auth_result["user"]
+        role = get_user_role(user.id)
+        cust_id = request.query_params.get('customer_id', "") if role == 'admin' else user.id
         try:
             today = datetime.now()
             customer = Customers.objects.get(id=cust_id) if cust_id else Customers.objects.all().order_by('date_joined')[0]
@@ -2203,10 +2208,10 @@ class BotList(views.APIView):
         queryset = []
         user = auth_result["user"]
         role = get_user_role(user.id)
-        cust_id = request.query_params.get('customer_id', None) if role == 'admin' else None
+        cust_id = request.query_params.get('customer_id', "") if role == 'admin' else user.id
         try:
-            user = Customers.objects.get(id=cust_id) if cust_id else user
-            cb_config = CustomerBots.objects.filter(customer=user) if cust_id or role == 'customer' else CustomerBots.objects.all()
+            user = Customers.objects.get(id=cust_id) if cust_id else None
+            cb_config = CustomerBots.objects.filter(customer=user) if user else CustomerBots.objects.all()
             queryset = cb_config.values('bot_id', 'bot__name', 'customer_id', 'customer__name')
         except Exception as e:
             print(e)
@@ -2496,14 +2501,14 @@ class Reports(views.APIView):
             "message": "Something went wrong.",
             "status": "failed"
         }
+        user = auth_result["user"]
+        role = get_user_role(user.id)
+        cust_id = request.query_params.get('customer_id', "") if role == 'admin' else user.id
         try:
-            cust_id = auth_result["user"].id
-            customer = Customers.objects.get(id=cust_id)
-        except:
-            cust_id = request.query_params.get("customer_id", "")
-            if not cust_id:
-                return response.Response(result)
-            customer = Customers.objects.get(id=cust_id)
+            customer = Customers.objects.get(id=cust_id) if cust_id else None
+        except Exception as e:
+            result['message'] = str(e)
+            return response.Response(result)
 
         today = datetime.now()
         try:
@@ -2520,7 +2525,9 @@ class Reports(views.APIView):
             end_date = datetime.strptime(nd_dt, "%Y-%m-%d").date() if nd_dt and all_records != 'true' else today.date()
             start_date = datetime.strptime(st_dt, "%Y-%m-%d").date() if st_dt and all_records != 'true' else \
                 end_date - timedelta(days=days_count)
-            bot_query = Q(customer=customer, bot_id=bot_id) if bot_id.isdigit() else Q(customer=customer)
+            bot_query = Q(bot_id=bot_id) if bot_id.isdigit() else Q()
+            if customer:
+                bot_query &= Q(customer=customer)
             range_query = Q(time_stamp__date__range=[start_date, end_date]) if start_date else Q(
                 time_stamp__date__lte=end_date)
             data = []
