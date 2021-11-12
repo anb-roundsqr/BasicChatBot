@@ -189,3 +189,4 @@ class BulkQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = BulkQuestion
         fields = ('id', 'mapping_id', 'questions')
+        order_by = ['id']
