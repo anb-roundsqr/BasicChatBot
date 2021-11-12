@@ -1,12 +1,8 @@
 from rest_framework import views, response, exceptions, renderers, viewsets, decorators, authentication, generics
 from datetime import datetime, timedelta
 from django.utils import timezone
-from ChatBot.functions import (
-    process_api_exception,
-    exception_handler,
-    time_stamp_to_date_format,
-    send_emails, email_save, get_user_role
-)
+from ChatBot.functions import (process_api_exception, exception_handler, time_stamp_to_date_format, send_emails,
+                               email_save, get_user_role, profanity_filter)
 from ChatBot.models import (
     BotConfiguration,
     Bots,
@@ -65,6 +61,7 @@ from django.template.loader import get_template
 from django.conf import settings
 import csv
 import openpyxl
+import requests
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -1109,6 +1106,7 @@ class ClientForm(views.APIView):
                         is_related = submitted_question['related']
                         sug_answers = submitted_question['suggested_answers']
                         sug_jump = submitted_question['suggested_jump']
+                        validation_type = submitted_question["validation_type"]
                         validity1 = submitted_question["validation1"]
                         validity2 = submitted_question["validation2"]
                         error_msg = submitted_question["error_msg"]
@@ -1188,6 +1186,11 @@ class ClientForm(views.APIView):
                                     print('validity1', validity1)
                                     print('validity2', validity2)
                                     print('error_msg', error_msg)
+                                    if validation_type == "custom":
+                                        resp = requests.post(submitted_question['api_name'], data={"answer": bot_info["text"]})
+                                        msg = resp.json()['message']
+                                        if msg:
+                                            errors.append(msg)
                                     if validity1 == "Contains":
                                         if validity2 == "Numbers":
                                             if contains_digit:
@@ -2588,3 +2591,16 @@ class Reports(views.APIView):
             result.update({"message": "error", "response": str(e)})
         # print("result", result)
         return response.Response(result)
+
+
+class CustomValidation(views.APIView):
+
+    def post(self, request, **kwargs):
+        try:
+            data = request.POST if 'answer' in request.POST else json.loads(request.body.decode('utf-8'))
+            filtered_text, censored = profanity_filter(data['answer'])
+            msg = "Please provide appropriate details" if censored else ""
+            return response.Response({"message": msg, "data": filtered_text, "censored": censored})
+        except Exception as e:
+            print(e)
+            return response.Response({"message": "", "data": str(e)}, status=400)

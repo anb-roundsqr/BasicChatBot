@@ -205,3 +205,14 @@ def get_user_role(user_id):
         user = Customers.objects.filter(id=user_id)
         role = 'customer'
     return role
+
+
+def profanity_filter(txt):
+    from profanityfilter import ProfanityFilter
+    import spacy
+    nlp = spacy.load("en_core_web_sm")
+    pf = ProfanityFilter()
+
+    if pf.is_profane(txt):
+        return pf.censor(txt), True
+    return pf.censor(txt), False
