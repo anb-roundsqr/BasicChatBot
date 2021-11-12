@@ -180,7 +180,7 @@ class QuestionListSerializer(serializers.ModelSerializer):
 
         model = BotConfiguration
         exclude = ['description']
-        order_by = ['-id']
+        order_by = ['id']
 
 
 class BulkQuestionSerializer(serializers.ModelSerializer):
@@ -189,4 +189,4 @@ class BulkQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = BulkQuestion
         fields = ('id', 'mapping_id', 'questions')
-        order_by = ['id']
+        order_by = ['-id']
