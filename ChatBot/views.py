@@ -1616,7 +1616,9 @@ class Analytics(views.APIView):
         cust_id = request.query_params.get('customer_id', "") if role == 'admin' else user.id
         try:
             today = datetime.now()
-            customer = Customers.objects.get(id=cust_id) if cust_id else Customers.objects.all().order_by('date_joined')[0]
+            customer = Customers.objects.all().order_by('date_joined')[0]
+            if cust_id:
+                customer = Customers.objects.get(id=cust_id)
             begin_day = customer.date_joined
             days_count = int(request.query_params.get("days_count", 30))
             all_records = request.query_params.get("all", "false")
