@@ -1186,7 +1186,8 @@ class ClientForm(views.APIView):
                                     print('validity1', validity1)
                                     print('validity2', validity2)
                                     print('error_msg', error_msg)
-                                    if validation_type == "custom":
+                                    print('Validation Type', validation_type)
+                                    if "custom" in validation_type:
                                         resp = requests.post(submitted_question['api_name'], data={"answer": bot_info["text"]})
                                         msg = resp.json()['message']
                                         if msg:
@@ -2372,7 +2373,10 @@ class APIBulkQuestion(views.APIView):
         try:
             obj_id = data.get('id')
             ques = data.get('questions', [])
-            res = BulkQuestion.objects.get(id=obj_id)
+            if obj_id:
+                res = BulkQuestion.objects.get(id=obj_id)
+            else:
+                res = BulkQuestion.objects.get(mapping_id=data.get('mapping_id'))
             cust = res.mapping_id.customer
             bot = res.mapping_id.bot
             for que in ques:
@@ -2599,7 +2603,11 @@ class CustomValidation(views.APIView):
 
     def post(self, request, **kwargs):
         try:
-            data = request.POST if 'answer' in request.POST else json.loads(request.body.decode('utf-8'))
+            try:
+                data = json.loads(self.request.body.decode('utf-8'))
+            except:
+                data = self.request.POST
+            print(data)
             filtered_text, censored = profanity_filter(data['answer'])
             msg = "Please provide appropriate details" if censored else ""
             return response.Response({"message": msg, "data": filtered_text, "censored": censored})
