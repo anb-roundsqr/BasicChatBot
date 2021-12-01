@@ -5,6 +5,8 @@ env.read_env()
 
 FRONTEND_URL = env('FRONTEND_URL')
 BACKEND_URL = env('BACKEND_URL')
+CLIENT_URL = env('CLIENT_URL')
+
 ALLOWED_HOSTS = env('HOSTS').split(',')
 
 CORS_ORIGIN_ALLOW_ALL = True

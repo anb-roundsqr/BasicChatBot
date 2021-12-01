@@ -115,14 +115,17 @@ class CustomerViewSet(viewsets.ViewSet):
                 context=serializer_context)
             customer_serializer.is_valid(raise_exception=True)
             customer_serializer.save()
+            cust = Customers.objects.get(username=requested_data["email_id"])
+            cust.password = base64.b64encode(bytes(password.encode())).decode()
+            cust.save()
             template_path = "emails/customer_register.html"
             txt_path = "emails/email.txt"
             context = {
                 'point_of_contact': customer_serializer.data["name"],
                 'org_name': requested_data["org_name"],
-                'username': requested_data["mobile"],
+                'username': requested_data["email_id"],
                 'password': password,
-                'login_url': "chatbot.roundsqr.net/clients",
+                'login_url': settings.CLIENT_URL,
                 'official_signature': 'RAJA DEVARAKONDA'
             }
             recipient = requested_data["email_id"]
@@ -521,7 +524,7 @@ class CustomerBotViewSet(viewsets.ViewSet):
             })
         except exceptions.APIException as e:
             result = process_api_exception(e, result)
-            if "customer_id_text" or "source_url" in result["response"]:
+            if "customer_id_text" in str(result["response"]) or "source_url" in str(result["response"]):
                 cb_data = CustomerBots.objects.filter(
                     customer_id=bot_serializer.data['customer'], bot_id=bot_serializer.data['bot'])
                 if cb_data:
@@ -2371,12 +2374,8 @@ class APIBulkQuestion(views.APIView):
         context = {"message": "Something went wrong"}
         status = 400
         try:
-            obj_id = data.get('id')
             ques = data.get('questions', [])
-            if obj_id:
-                res = BulkQuestion.objects.get(id=obj_id)
-            else:
-                res = BulkQuestion.objects.get(mapping_id=data.get('mapping_id'))
+            res = BulkQuestion.objects.get(mapping_id_id=data.get('mapping_id'))
             cust = res.mapping_id.customer
             bot = res.mapping_id.bot
             for que in ques:

@@ -4,6 +4,7 @@ DEBUG = False
 
 FRONTEND_URL = "https://app.chatbotqa.roundsqr.net"
 BACKEND_URL = "https://api.chatbotqa.roundsqr.net"
+CLIENT_URL = "http://chat-bot-client.s3-website-ap-southeast-2.amazonaws.com"
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '3.137.120.243', 'api.chatbotqa.roundsqr.net']
 
