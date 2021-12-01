@@ -115,7 +115,7 @@ class CustomerViewSet(viewsets.ViewSet):
                 context=serializer_context)
             customer_serializer.is_valid(raise_exception=True)
             customer_serializer.save()
-            cust = Customers.objects.get(username=requested_data["email_id"])
+            cust = Customers.objects.get(email_id=requested_data["email_id"])
             cust.password = base64.b64encode(bytes(password.encode())).decode()
             cust.save()
             template_path = "emails/customer_register.html"
