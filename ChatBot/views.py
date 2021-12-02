@@ -62,6 +62,7 @@ from django.conf import settings
 import csv
 import openpyxl
 import requests
+import ast
 
 
 class CustomerViewSet(viewsets.ViewSet):
@@ -791,12 +792,12 @@ class ClientConfiguration(views.APIView):
                             'radio',
                             'action'
                         ]:
-                            if not question["suggested_answers"]:
+                            if not question["suggested_answers"] or question["suggested_answers"] == "[]":
                                 suggested_answers = [{"payload": "", "title": ""}]
                             else:
                                 suggested_answers = [
                                     {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                                    {"payload": sug_ans, "title": sug_ans} for sug_ans in question["suggested_answers"]]
+                                    {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(question["suggested_answers"])]
                             question_obj.suggested_answers = suggested_answers
                         if "suggested_jump" in question:
                             question_obj.suggested_jump = question[
@@ -1256,12 +1257,12 @@ class ClientForm(views.APIView):
                     ] = str(bot_info["location"])
                     request.session.set_expiry(86400)
                 # print('questions', questions)
-                if not next_question["suggested_answers"]:
+                if not next_question["suggested_answers"] or next_question["suggested_answers"] == "[]":
                     suggested_answers = [{"payload": "", "title": ""}]
                 else:
                     suggested_answers = [
                         {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                        {"payload": sug_ans, "title": sug_ans} for sug_ans in next_question["suggested_answers"]]
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(next_question["suggested_answers"])]
                 required_next_question = {
                     'id': next_question['id'],
                     'bot': next_question['bot'],
@@ -2258,12 +2259,12 @@ class APIConfiguration(views.APIView):
         context = {"message": "Something went wrong"}
         status = 400
         try:
-            if not que["suggested_answers"]:
+            if not que["suggested_answers"] or que["suggested_answers"] == "[]":
                 suggested_answers = [{"payload": "", "title": ""}]
             else:
                 suggested_answers = [
                     {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                    {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
+                    {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(que["suggested_answers"])]
             conf = BotConfiguration.objects.create(
                 question_id=que['question_id'], question=que['question'],
                 answer_type=que['answer_type'], suggested_answers=suggested_answers, api_name=que['api_name'],
@@ -2290,12 +2291,12 @@ class APIConfiguration(views.APIView):
         context = {"message": "Something went wrong"}
         status = 400
         try:
-            if not que["suggested_answers"]:
+            if not que["suggested_answers"] or que["suggested_answers"] == "[]":
                 suggested_answers = [{"payload": "", "title": ""}]
             else:
                 suggested_answers = [
                     {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                    {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
+                    {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(que["suggested_answers"])]
             conf = BotConfiguration.objects.get(id=que['id'])
             conf.question = que['question'] if 'question' in que else conf.question
             conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
@@ -2368,12 +2369,12 @@ class APIBulkQuestion(views.APIView):
             cust = res.mapping_id.customer
             bot = res.mapping_id.bot
             for que in ques:
-                if not ques["suggested_answers"]:
+                if not ques["suggested_answers"] or ques["suggested_answers"] == "[]":
                     suggested_answers = [{"payload": "", "title": ""}]
                 else:
                     suggested_answers = [
                         {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                        {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(que["suggested_answers"])]
                 conf = BotConfiguration.objects.create(
                     question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
                     suggested_answers=suggested_answers, suggested_jump=que['suggested_jump'], fields=que['fields'],
@@ -2404,12 +2405,12 @@ class APIBulkQuestion(views.APIView):
             cust = res.mapping_id.customer
             bot = res.mapping_id.bot
             for que in ques:
-                if not que["suggested_answers"]:
+                if not que["suggested_answers"] or que["suggested_answers"] == "[]":
                     suggested_answers = [{"payload": "", "title": ""}]
                 else:
                     suggested_answers = [
                         {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                        {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(que["suggested_answers"])]
                 try:
                     conf = BotConfiguration.objects.get(id=que['id'])
                     conf.question = que['question'] if 'question' in que else conf.question
