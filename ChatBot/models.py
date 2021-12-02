@@ -167,7 +167,7 @@ class BotConfiguration(models.Model):
         ('ACTION', 'action', _('ACTION')),
     )
     answer_type = models.CharField(max_length=10, choices=ANSWER_TYPE)
-    suggested_answers = models.TextField(default=[])
+    suggested_answers = models.TextField(default=[{"payload": "", "title": ""}])
     suggested_jump = models.TextField(default=[])
     validation1 = models.TextField(null=True, blank=True)
     validation2 = models.TextField(null=True, blank=True)

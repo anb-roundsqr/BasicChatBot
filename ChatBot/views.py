@@ -791,9 +791,13 @@ class ClientConfiguration(views.APIView):
                             'radio',
                             'action'
                         ]:
-                            question_obj.suggested_answers = question[
-                                "suggested_answers"
-                            ]
+                            if not question["suggested_answers"]:
+                                suggested_answers = [{"payload": "", "title": ""}]
+                            else:
+                                suggested_answers = [
+                                    {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
+                                    {"payload": sug_ans, "title": sug_ans} for sug_ans in question["suggested_answers"]]
+                            question_obj.suggested_answers = suggested_answers
                         if "suggested_jump" in question:
                             question_obj.suggested_jump = question[
                                 "suggested_jump"
@@ -1018,7 +1022,7 @@ class ClientConfiguration(views.APIView):
                             'checkbox',
                             'radio'
                         ]:
-                            if not question["suggested_answers"]:
+                            if not question["suggested_answers"] or not question["suggested_answers"][0]["payload"]:
                                 message = "suggested_answers must be non" \
                                           " empty in 'questions' at index" \
                                           " %s" % (str(j + 1))
@@ -1118,7 +1122,7 @@ class ClientForm(views.APIView):
                             print("this is related question")
                             if len(sug_answers) > 0:
                                 print("current answer", bot_info["text"])
-                                ans_list = [ans['title'] for ans in sug_answers if 'title' in ans]
+                                ans_list = [ans['title'] if 'title' in ans else ans for ans in sug_answers]
                                 if bot_info['text'] in ans_list or "" in ans_list:
                                     try:
                                         next_index = ans_list.index(bot_info['text'])
@@ -1252,10 +1256,12 @@ class ClientForm(views.APIView):
                     ] = str(bot_info["location"])
                     request.session.set_expiry(86400)
                 # print('questions', questions)
-                suggested_answers = [{
-                    "payload": sug_ans['payload'],
-                    "title": sug_ans['title'],
-                } for sug_ans in next_question["suggested_answers"]]
+                if not next_question["suggested_answers"]:
+                    suggested_answers = [{"payload": "", "title": ""}]
+                else:
+                    suggested_answers = [
+                        {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
                     'bot': next_question['bot'],
@@ -2252,9 +2258,15 @@ class APIConfiguration(views.APIView):
         context = {"message": "Something went wrong"}
         status = 400
         try:
+            if not que["suggested_answers"]:
+                suggested_answers = [{"payload": "", "title": ""}]
+            else:
+                suggested_answers = [
+                    {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
+                    {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
             conf = BotConfiguration.objects.create(
                 question_id=que['question_id'], question=que['question'],
-                answer_type=que['answer_type'], suggested_answers=que['suggested_answers'], api_name=que['api_name'],
+                answer_type=que['answer_type'], suggested_answers=suggested_answers, api_name=que['api_name'],
                 suggested_jump=que['suggested_jump'], fields=que['fields'], number_of_params=que['number_of_params'],
                 required=que['required'], related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
                 is_last_question=que['is_last_question'], error_msg=que['error_msg'], customer_id=que['customer'],
@@ -2278,10 +2290,17 @@ class APIConfiguration(views.APIView):
         context = {"message": "Something went wrong"}
         status = 400
         try:
+            if not que["suggested_answers"]:
+                suggested_answers = [{"payload": "", "title": ""}]
+            else:
+                suggested_answers = [
+                    {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
+                    {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
             conf = BotConfiguration.objects.get(id=que['id'])
             conf.question = que['question'] if 'question' in que else conf.question
             conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
-            conf.suggested_answers = que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+            # conf.suggested_answers=que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+            conf.suggested_answers = suggested_answers
             conf.suggested_jump = que['suggested_jump'] if 'suggested_jump' in que else conf.suggested_jump
             conf.fields = que['fields'] if 'fields' in que else conf.fields
             conf.api_name = que['api_name'] if 'api_name' in que else conf.api_name
@@ -2349,9 +2368,15 @@ class APIBulkQuestion(views.APIView):
             cust = res.mapping_id.customer
             bot = res.mapping_id.bot
             for que in ques:
+                if not ques["suggested_answers"]:
+                    suggested_answers = [{"payload": "", "title": ""}]
+                else:
+                    suggested_answers = [
+                        {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
                 conf = BotConfiguration.objects.create(
                     question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
-                    suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                    suggested_answers=suggested_answers, suggested_jump=que['suggested_jump'], fields=que['fields'],
                     api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
                     related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
                     is_last_question=que['is_last_question'], validation1=que['validation1'], validation2=que['validation2'],
@@ -2375,15 +2400,22 @@ class APIBulkQuestion(views.APIView):
         status = 400
         try:
             ques = data.get('questions', [])
-            res = BulkQuestion.objects.get(mapping_id_id=data.get('mapping_id'))
+            res = BulkQuestion.objects.filter(mapping_id_id=data.get('mapping_id'))[0]
             cust = res.mapping_id.customer
             bot = res.mapping_id.bot
             for que in ques:
+                if not que["suggested_answers"]:
+                    suggested_answers = [{"payload": "", "title": ""}]
+                else:
+                    suggested_answers = [
+                        {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
                 try:
                     conf = BotConfiguration.objects.get(id=que['id'])
                     conf.question = que['question'] if 'question' in que else conf.question
                     conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
-                    conf.suggested_answers = que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+                    # conf.suggested_answers = que['suggested_answers'] if 'suggested_answers' in que else conf.suggested_answers
+                    conf.suggested_answers = suggested_answers
                     conf.suggested_jump = que['suggested_jump'] if 'suggested_jump' in que else conf.suggested_jump
                     conf.fields = que['fields'] if 'fields' in que else conf.fields
                     conf.api_name = que['api_name'] if 'api_name' in que else conf.api_name
@@ -2403,7 +2435,7 @@ class APIBulkQuestion(views.APIView):
                     print(e)
                     conf = BotConfiguration.objects.create(
                         question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
-                        suggested_answers=que['suggested_answers'], suggested_jump=que['suggested_jump'], fields=que['fields'],
+                        suggested_answers=suggested_answers, suggested_jump=que['suggested_jump'], fields=que['fields'],
                         api_name=que['api_name'], number_of_params=que['number_of_params'], required=que['required'],
                         related=que['related'], is_lead_gen_question=que['is_lead_gen_question'],
                         is_last_question=que['is_last_question'], validation1=que['validation1'], validation2=que['validation2'],
