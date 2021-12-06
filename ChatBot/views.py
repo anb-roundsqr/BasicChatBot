@@ -797,7 +797,7 @@ class ClientConfiguration(views.APIView):
                             else:
                                 suggested_answers = [
                                     {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                                    {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(question["suggested_answers"])]
+                                    {"payload": sug_ans, "title": sug_ans} for sug_ans in question["suggested_answers"]]
                             question_obj.suggested_answers = suggested_answers
                         if "suggested_jump" in question:
                             question_obj.suggested_jump = question[
@@ -1262,7 +1262,7 @@ class ClientForm(views.APIView):
                 else:
                     suggested_answers = [
                         {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                        {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(next_question["suggested_answers"])]
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in next_question["suggested_answers"]]
                 required_next_question = {
                     'id': next_question['id'],
                     'bot': next_question['bot'],
@@ -2264,7 +2264,7 @@ class APIConfiguration(views.APIView):
             else:
                 suggested_answers = [
                     {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                    {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(que["suggested_answers"])]
+                    {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
             conf = BotConfiguration.objects.create(
                 question_id=que['question_id'], question=que['question'],
                 answer_type=que['answer_type'], suggested_answers=suggested_answers, api_name=que['api_name'],
@@ -2296,7 +2296,7 @@ class APIConfiguration(views.APIView):
             else:
                 suggested_answers = [
                     {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                    {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(que["suggested_answers"])]
+                    {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
             conf = BotConfiguration.objects.get(id=que['id'])
             conf.question = que['question'] if 'question' in que else conf.question
             conf.answer_type = que['answer_type'] if 'answer_type' in que else conf.answer_type
@@ -2374,7 +2374,7 @@ class APIBulkQuestion(views.APIView):
                 else:
                     suggested_answers = [
                         {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                        {"payload": sug_ans, "title": sug_ans} for sug_ans in ast.literal_eval(que["suggested_answers"])]
+                        {"payload": sug_ans, "title": sug_ans} for sug_ans in que["suggested_answers"]]
                 conf = BotConfiguration.objects.create(
                     question_id=que['question_id'], question=que['question'], answer_type=que['answer_type'],
                     suggested_answers=suggested_answers, suggested_jump=que['suggested_jump'], fields=que['fields'],
