@@ -176,7 +176,7 @@ class BotConfiguration(models.Model):
     date_modified = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
     required = models.CharField(max_length=4, default="no")
-    related = models.BooleanField(default=False)
+    related = models.BooleanField(default=True)
     is_first_question = models.BooleanField(default=False)
     is_last_question = models.BooleanField(default=False)
     is_lead_gen_question = models.BooleanField(default=False)
