@@ -62,7 +62,6 @@ from django.conf import settings
 import csv
 import openpyxl
 import requests
-import ast
 
 
 class CustomerViewSet(viewsets.ViewSet):
