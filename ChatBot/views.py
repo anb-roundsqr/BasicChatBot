@@ -1114,11 +1114,14 @@ class ClientForm(views.APIView):
                         is_related = submitted_question['related']
                         # sug_answers = submitted_question['suggested_answers']
                         try:
-                            sg = ast.literal_eval(submitted_question["suggested_answers"])
+                            sg = eval(submitted_question["suggested_answers"])
                         except:
                             sg = submitted_question["suggested_answers"]
                         has_answer = True if sg and 'title' in sg and sg[0]['title'] else False
-                        sug_jump = submitted_question['suggested_jump']
+                        try:
+                            sug_jump = eval(submitted_question['suggested_jump'])
+                        except:
+                            sug_jump = submitted_question['suggested_jump']
                         validation_type = submitted_question["validation_type"]
                         validity1 = submitted_question["validation1"]
                         validity2 = submitted_question["validation2"]
@@ -2265,7 +2268,7 @@ class APIConfiguration(views.APIView):
         status = 400
         try:
             try:
-                sg = ast.literal_eval(que["suggested_answers"])
+                sg = eval(que["suggested_answers"])
             except:
                 sg = que["suggested_answers"]
             if not sg:
@@ -2297,7 +2300,7 @@ class APIConfiguration(views.APIView):
         status = 400
         try:
             try:
-                sg = ast.literal_eval(que["suggested_answers"])
+                sg = eval(que["suggested_answers"])
             except:
                 sg = que["suggested_answers"]
             if not sg:
@@ -2374,7 +2377,7 @@ class APIBulkQuestion(views.APIView):
             bot = res.mapping_id.bot
             for que in ques:
                 try:
-                    sg = ast.literal_eval(que["suggested_answers"])
+                    sg = eval(que["suggested_answers"])
                 except:
                     sg = que["suggested_answers"]
                 if not sg:
@@ -2410,7 +2413,7 @@ class APIBulkQuestion(views.APIView):
             bot = res.mapping_id.bot
             for que in ques:
                 try:
-                    sg = ast.literal_eval(que["suggested_answers"])
+                    sg = eval(que["suggested_answers"])
                 except:
                     sg = que["suggested_answers"]
                 if not sg:
