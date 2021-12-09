@@ -1116,7 +1116,7 @@ class ClientForm(views.APIView):
                             sg = eval(submitted_question["suggested_answers"])
                         except:
                             sg = submitted_question["suggested_answers"]
-                        has_answer = True if sg and 'title' in sg and sg[0]['title'] else False
+                        has_answer = True if sg and 'title' in sg[0] and sg[0]['title'] else False
                         try:
                             sug_jump = eval(submitted_question['suggested_jump'])
                         except:
