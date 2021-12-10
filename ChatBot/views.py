@@ -2301,6 +2301,11 @@ class APIConfiguration(views.APIView):
             context['message'] = "Please provide configuration Id."
         try:
             config = BotConfiguration.objects.get(id=config_id)
+            bq = BulkQuestion.objects.filter(questions=config_id)
+            if bq:
+                bq[0].questions.remove(config)
+                if not bq[0].questions.all():
+                    bq[0].delete()
             config.delete()
             context['message'] = "Question deleted successfully."
             status = 200
@@ -2336,7 +2341,8 @@ class APIBulkQuestion(views.APIView):
         try:
             ques = data.get('questions', [])
             mapping_id = data.get('mapping_id')
-            res = BulkQuestion.objects.create(mapping_id_id=mapping_id)
+            bq = BulkQuestion.objects.filter(mapping_id_id=mapping_id)
+            res = bq[0] if bq else BulkQuestion.objects.create(mapping_id_id=mapping_id)
             cust = res.mapping_id.customer
             bot = res.mapping_id.bot
             for que in ques:

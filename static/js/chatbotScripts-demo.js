@@ -309,7 +309,7 @@ function showResponse(ajaxResponse, response) {
             newbtn.value = sug_answers[x].title;
             newbtn.innerHTML = sug_answers[x].title;
             if(!sug_answers[x].title) {
-                newbtn.style = 'background: transparent; border: none !important;';
+                newbtn.style = 'background: transparent; border: none !important; position: fixed;';
             }
             newbtn.addEventListener("click", function (event) {
                 if(ajaxResponse[0].answer_type == 'ACTION') var btnValue = "form submitted"; else btnValue = event.target.value;
@@ -354,6 +354,9 @@ function showResponse(ajaxResponse, response) {
             });
             span.appendChild(newbtn);
 
+        }
+        if(ajaxResponse[0].answer_type == 'NONE') {
+            funChatbox("", ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
         }
     }
 
