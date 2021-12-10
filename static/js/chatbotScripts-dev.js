@@ -287,9 +287,6 @@ function showResponse(ajaxResponse, response) {
         }, 500);;
 
     }
-    else if(ajaxResponse[0].answer_type == 'NONE') {
-        funChatbox("", ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
-    }
     else {
         if(ajaxResponse[0].answer_type == 'ACTION') {
             var form_div = document.createElement('div');
@@ -358,6 +355,9 @@ function showResponse(ajaxResponse, response) {
             });
             span.appendChild(newbtn);
 
+        }
+        if(ajaxResponse[0].answer_type == 'NONE') {
+            funChatbox("", ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
         }
     }
 
