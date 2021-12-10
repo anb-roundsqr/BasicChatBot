@@ -1092,23 +1092,13 @@ class ClientForm(views.APIView):
                     # if request.session.get("chat_session_%s" % str(bot_info["sessionId"])) != bot_info["location"]:
                     #     return result
                     print("Check1")
-                    submitted_question = [
-                        question for question in questions if question[
-                            'question'
-                        ] == bot_info['question']
-                    ]
+                    submitted_question = [question for question in questions 
+                                          if question['question'] == bot_info['question']]
                     if not submitted_question:
                         result["message"] = "invalid question"
                         return result
                     submitted_question = submitted_question[0]
                     print('submitted_question', submitted_question)
-                    # next_question = [question for question in questions if question[
-                    #     'question_id'
-                    # ] == int(submitted_question['question_id']) + 1]
-                    # if not next_question:  # or 'thanks' in submitted_question['question'].lower():
-                    #     result["message"] = "no more questions"
-                    #     return result
-                    # next_question = next_question[0]
                     if 'related' in submitted_question:
                         is_related = submitted_question['related']
                         # sug_answers = submitted_question['suggested_answers']
@@ -1116,7 +1106,7 @@ class ClientForm(views.APIView):
                             sg = eval(submitted_question["suggested_answers"])
                         except:
                             sg = submitted_question["suggested_answers"]
-                        has_answer = True if sg and 'title' in sg[0] and sg[0]['title'] else False
+                        has_suggested_answer = True if sg and 'title' in sg[0] and sg[0]['title'] else False
                         try:
                             sug_jump = eval(submitted_question['suggested_jump'])
                         except:
@@ -1128,7 +1118,7 @@ class ClientForm(views.APIView):
                         print('is_related', is_related)
                         if is_related:
                             print("this is related question")
-                            if has_answer:
+                            if has_suggested_answer:
                                 print("current answer", bot_info["text"])
                                 ans_list = [ans['title'] if 'title' in ans else ans for ans in sg]
                                 if bot_info['text'] in ans_list or "" in ans_list:
@@ -1139,36 +1129,14 @@ class ClientForm(views.APIView):
                                     print('next_index', next_index)
                                     if isinstance(sug_jump, list):
                                         if next_index < len(sug_jump):
-                                            next_question = sug_jump[
-                                                next_index]
-                                            print('next_question', next_question)
-                                            next_question = [
-                                                question
-                                                for question in questions
-                                                if question[
-                                                    'question'
-                                                ] == next_question
-                                            ][0]
+                                            next_question = sug_jump[next_index]
                                         elif len(sug_jump) == 1:
                                             next_question = sug_jump[0]
-                                            print('next_question', next_question)
-                                            next_question = [
-                                                question
-                                                for question in questions
-                                                if question[
-                                                    'question'
-                                                ] == next_question
-                                            ][0]
                                     else:
                                         next_question = sug_jump
-                                        print('next_question', next_question)
-                                        next_question = [
-                                            question
-                                            for question in questions
-                                            if question[
-                                                'question'
-                                            ] == next_question
-                                        ][0]
+                                    print('next_question', next_question)
+                                    next_question = [question for question in questions 
+                                                     if question['question'] == next_question][0]
                                 else:
                                     result["message"] = "invalid answer"
                                     return result
@@ -1178,13 +1146,8 @@ class ClientForm(views.APIView):
                                 else:
                                     next_question = sug_jump
                                 print('next_question', next_question)
-                                next_question = [
-                                    question
-                                    for question in questions
-                                    if question[
-                                           'question'
-                                       ] == next_question
-                                ][0]
+                                next_question = [question for question in questions 
+                                                 if question['question'] == next_question][0]
                                 if submitted_question["answer_type"] == "TEXT":
                                     contains_digit = any(map(str.isdigit, bot_info["text"]))
                                     print('contains_digit', contains_digit)
@@ -1242,6 +1205,8 @@ class ClientForm(views.APIView):
                                     print("errors", errors)
                                     if errors:
                                         next_question = submitted_question
+                                elif submitted_question["answer_type"] == "NONE":
+                                    print("Answer type is NONE")
                     print('bot', customer_bot.bot)
                     con_obj = Conversation()
                     con_obj.bot = customer_bot.bot
@@ -1264,20 +1229,20 @@ class ClientForm(views.APIView):
                     ] = str(bot_info["location"])
                     request.session.set_expiry(86400)
                 # print('questions', questions)
-                if not next_question["suggested_answers"] or next_question["suggested_answers"] == "[]":
-                    suggested_answers = [{"payload": "", "title": ""}]
-                else:
-                    suggested_answers = [
-                        {"payload": sug_ans['payload'], "title": sug_ans['title']} if 'payload' in sug_ans else
-                        {"payload": sug_ans, "title": sug_ans} for sug_ans in next_question["suggested_answers"]]
+                try:
+                    sg = eval(next_question["suggested_answers"])
+                except:
+                    sg = next_question["suggested_answers"]
+                if not sg:
+                    sg = [{"payload": "", "title": ""}]
                 required_next_question = {
                     'id': next_question['id'],
                     'bot': next_question['bot'],
                     'question': next_question['question'],
                     'question_id': next_question['question_id'],
                     'answer_type': next_question['answer_type'],
-                    'type': 'file' if suggested_answers and 'payload' in suggested_answers[0] and 'static/' in suggested_answers[0]['payload'] else 'text',
-                    'suggested_answers': suggested_answers,
+                    'type': 'file' if sg and 'payload' in sg[0] and 'static/' in sg[0]['payload'] else 'text',
+                    'suggested_answers': sg,
                     'api_name': next_question['api_name'],
                     'fields': json.loads(next_question['fields']) if next_question['fields'] not in ["[]", ""] else [],
                     'is_last_question': next_question["is_last_question"],

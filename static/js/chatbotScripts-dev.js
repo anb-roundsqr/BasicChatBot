@@ -286,7 +286,11 @@ function showResponse(ajaxResponse, response) {
             plusSlides(null, 1, sug_answers.length);
         }, 500);;
 
-    } else {
+    }
+    else if(ajaxResponse[0].answer_type == 'NONE') {
+        funChatbox("", ajaxResponse[0].question, response, ajaxResponse[0].sessionId);
+    }
+    else {
         if(ajaxResponse[0].answer_type == 'ACTION') {
             var form_div = document.createElement('div');
             var form_fields = ajaxResponse[0].fields;
@@ -309,7 +313,7 @@ function showResponse(ajaxResponse, response) {
             newbtn.value = sug_answers[x].title;
             newbtn.innerHTML = sug_answers[x].title;
             if(!sug_answers[x].title) {
-                newbtn.style = 'background: transparent; border: none !important;';
+                newbtn.style = 'background: transparent; border: none !important; position: fixed;';
             }
             newbtn.addEventListener("click", function (event) {
                 if(ajaxResponse[0].answer_type == 'ACTION') var btnValue = "form submitted"; else btnValue = event.target.value;
@@ -531,7 +535,7 @@ async function funTextMsg() {
 
         var span_oc = document.createElement('span');
         //span_oc.innerHTML = document.forms["myForm"]["text_msg"].value;
-        span_oc.innerHTML = document.getElementById("txtmsgid").value;;
+        span_oc.innerHTML = document.getElementById("txtmsgid").value;
         para_oc.appendChild(span_oc);
         newItem_oc1.appendChild(para_oc);
         newItem_oc.appendChild(newItem_oc1);

@@ -165,6 +165,7 @@ class BotConfiguration(models.Model):
         ('FILE', 'file', _('FILE')),
         ('DATE', 'date', _('DATE')),
         ('ACTION', 'action', _('ACTION')),
+        ('NONE', 'none', _('NONE')),
     )
     answer_type = models.CharField(max_length=10, choices=ANSWER_TYPE)
     suggested_answers = models.TextField(default=[{"payload": "", "title": ""}])
