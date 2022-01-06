@@ -137,11 +137,17 @@ class CustomerBotListSerializer(serializers.ModelSerializer):
 
 
 class CustomerBotRetrieveSerializer(serializers.ModelSerializer):
+    bot_name = serializers.SerializerMethodField()
+    
+    def get_bot_name(self, cb: CustomerBots):
+        return cb.bot.name
 
     class Meta:
 
         model = CustomerBots
-        fields = '__all__'
+        # fields = '__all__'
+        exclude = ['date_created']
+        extra_fields = ['bot_name']
 
 
 class CustomerBotCreateSerializer(serializers.ModelSerializer):

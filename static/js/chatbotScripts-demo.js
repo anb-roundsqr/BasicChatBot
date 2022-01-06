@@ -7,7 +7,7 @@ function onLoad() {
 }
 
 async function funCss(location_Url) {
-    var Url = "http://54.68.230.102:8000/bot-properties?source_url=";
+    var Url = "https://amiga.ai:8000/bot-properties?source_url=";
     var params = location_Url;
 
     try {
@@ -63,7 +63,7 @@ function funChatbox(text_msgs, ques_msg, response, sessionId) {
         })
     function iprotocol(ip_sys) {
 
-        var Url = "http://54.68.230.102:8000/client-form";
+        var Url = "https://amiga.ai:8000/client-form";
         var xhr = new XMLHttpRequest();
         xhr.open('POST', Url, true);
         var data = JSON.stringify({
@@ -122,7 +122,7 @@ function showResponse(ajaxResponse, response) {
     // headerContainer.style.backgroundColor = '#ccffff';
     var newIcon = document.createElement('div');
     newIcon.className = ('chats-logo');
-    var botLogo = "http://54.68.230.102:8000/" + css.bot_logo;
+    var botLogo = "https://amiga.ai:8000/" + css.bot_logo;
     console.log(botLogo)
     newIcon.innerHTML = ('<img src= ' + botLogo + '>');
     // newIcon.appendChild(newIcon);
@@ -147,7 +147,7 @@ function showResponse(ajaxResponse, response) {
 
         var newItem1Error = document.createElement('div');
         newItem1Error.className = ('received-chats-img-error');
-        var botImgError = "http://54.68.230.102:8000/" + css.bot_logo;
+        var botImgError = "https://amiga.ai:8000/" + css.bot_logo;
         console.log(botImgError)
         newItem1Error.innerHTML = ('<img src= ' + botImgError + '>');
         newItemError.appendChild(newItem1Error);
@@ -186,7 +186,7 @@ function showResponse(ajaxResponse, response) {
 
     var newItem1 = document.createElement('div');
     newItem1.className = ('received-chats-img');
-    var botImg = "http://54.68.230.102:8000/" + css.bot_logo;
+    var botImg = "https://amiga.ai:8000/" + css.bot_logo;
     console.log(botImg)
     newItem1.innerHTML = ('<img src= ' + botImg + '>');
     newItem.appendChild(newItem1);
@@ -234,7 +234,7 @@ function showResponse(ajaxResponse, response) {
             var newbtn = document.createElement('IMG');
             // newbtn.type = 'button';
             console.log(sug_answers[x].payload);
-            newbtn.src = "http://54.68.230.102:8000/" + sug_answers[x].payload;
+            newbtn.src = "https://amiga.ai:8000/" + sug_answers[x].payload;
             newbtn.value = sug_answers[x].title;
             newbtn.height = '110'
             newbtn.width = '78'
@@ -263,7 +263,7 @@ function showResponse(ajaxResponse, response) {
 
                 var newItem_oc2 = document.createElement('div');
                 newItem_oc2.className = ('outgoing-chats-img');
-                var userImg = "https://api.chatbot.roundsqr.net/" + css.user_logo;
+                var userImg = "https://amiga.ai/" + css.user_logo;
                 newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
                 newItem_oc.appendChild(newItem_oc2);
 
@@ -338,7 +338,7 @@ function showResponse(ajaxResponse, response) {
 
                 var newItem_oc2 = document.createElement('div');
                 newItem_oc2.className = ('outgoing-chats-img');
-                var userImg = "http://54.68.230.102:8000/" + css.user_logo;
+                var userImg = "https://amiga.ai:8000/" + css.user_logo;
                 newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
                 newItem_oc.appendChild(newItem_oc2);
 
@@ -408,7 +408,7 @@ async function SaveFile(res) {
     formData.append("asset", file);
 
     try {
-        let r = await fetch('http://54.68.230.102:8000/assets/file', { method: "POST", body: formData })
+        let r = await fetch('https://amiga.ai:8000/assets/file', { method: "POST", body: formData })
             .then(response => response.text())
             .then(data =>
                 response = JSON.parse(data));
@@ -425,7 +425,7 @@ async function SaveFile(res) {
 }
 
 async function funFileMsg(textmsg, filePath) {
-    var Url = "http://54.68.230.102:8000/bot-properties?source_url=";
+    var Url = "https://amiga.ai:8000/bot-properties?source_url=";
     var params = window.location.href;
     var css;
 
@@ -468,7 +468,7 @@ async function funFileMsg(textmsg, filePath) {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "http://54.68.230.102:8000/" + css.user_logo;
+        var userImg = "https://amiga.ai:8000/" + css.user_logo;
         newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
         newItem_oc.appendChild(newItem_oc2);
 
@@ -493,7 +493,7 @@ function doit_onkeypress(event) {
 }
 
 async function funTextMsg() {
-    var Url = "http://54.68.230.102:8000/bot-properties?source_url=";
+    var Url = "https://amiga.ai:8000/bot-properties?source_url=";
     var params = window.location.href;
     var css;
 
@@ -540,7 +540,7 @@ async function funTextMsg() {
 
         var newItem_oc2 = document.createElement('div');
         newItem_oc2.className = ('outgoing-chats-img');
-        var userImg = "http://54.68.230.102:8000/" + css.user_logo;
+        var userImg = "https://amiga.ai:8000/" + css.user_logo;
         newItem_oc2.innerHTML = ('<img src= ' + userImg + '>');
         newItem_oc.appendChild(newItem_oc2);
 

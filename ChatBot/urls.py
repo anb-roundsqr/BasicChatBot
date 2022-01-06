@@ -35,6 +35,7 @@ urlpatterns = [
     re_path(r'analytics/(?P<slug>[\w-]+)', vu.Analytics.as_view()),
     re_path(r'assets/(?P<slug>[\w-]+)', vu.AssetsUploader.as_view()),
     re_path(r'customers/(?P<pk>.+)/$', vu.CustomerViewSet, name='customer_update'),
+    re_path(r'bots/(?P<pk>.+)/$', vu.BotViewSet, name='bot_update'),
     re_path(r'(?P<slug>[\w-]+)/login', vu.Login.as_view()),
     re_path(r'(?P<slug>[\w-]+)/logout', vu.Logout.as_view()),
     path('customer/signup', vu.ClientSignup.as_view()),
